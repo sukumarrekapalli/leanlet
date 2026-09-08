@@ -13,4 +13,5 @@ export default defineConfig({
   css: { postcss: { plugins: [tailwindcss()] } },
   resolve: { alias: { '@': rootDir } },
   plugins: [react(), sites()],
+  build: { outDir: 'dist/client' },
 });

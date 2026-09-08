@@ -60,14 +60,14 @@ npm run build
 npm run preview
 ```
 
-`dist/` is a fully static site. It can be uploaded to any static host.
+`dist/client/` is a fully static site. It can be uploaded to any static host.
 
 ## Publish with GitHub Pages
 
 1. Create a repository and copy this folder into its root.
 2. Push the repository with `main` as the default branch.
 3. In **Settings → Pages → Build and deployment**, choose **GitHub Actions**.
-4. The included `.github/workflows/deploy-pages.yml` builds and publishes `dist/`.
+4. The included `.github/workflows/deploy-pages.yml` builds and publishes `dist/client/`.
 
 The Vite configuration uses relative paths, so project pages such as
 `https://username.github.io/leanlet/` work without editing a base URL.
@@ -122,4 +122,3 @@ taxonomy.
 
 Project code is MIT licensed. Model and runtime notices are in
 `MODEL_LICENSES.md`.
-

@@ -7,7 +7,7 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && mkdir -p dist/server && cp server/index.js dist/server/index.js",
     "preview": "vite preview",
     "lint": "oxlint",
     "format": "oxfmt"
