@@ -47,7 +47,9 @@ function loadModel() {
         send({ type: 'status', state: 'loading', message: item.file?.endsWith('.onnx') ? 'Loading the 3.9 MB model' : 'Preparing the local runtime', progress: value });
       },
     });
-    void classifierPromise.then(() => send({ type: 'status', state: 'ready', message: 'Model ready on this device', progress: 100 })).catch(() => undefined);
+    void classifierPromise
+      .then(() => send({ type: 'status', state: 'ready', message: 'Model ready on this device', progress: 100 }))
+      .catch(() => { classifierPromise = null; });
   }
   return classifierPromise;
 }

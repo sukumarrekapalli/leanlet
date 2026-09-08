@@ -151,6 +151,8 @@ export default function Home() {
                   </div>
                   <p className="mt-5 font-mono text-[10px] uppercase tracking-wider text-black/40">Inference {result.elapsedMs} ms · on this device</p>
                 </div>
+              ) : runtime === 'error' ? (
+                <div><span className="mb-6 grid size-14 place-items-center rounded-full bg-red-100 text-red-700"><Cpu className="size-5" /></span><p className="font-mono text-[10px] uppercase tracking-[0.16em] text-red-700">Runtime error</p><p className="mt-3 text-2xl font-medium leading-tight tracking-[-0.035em]">The local model could not start.</p><p className="mt-4 break-words text-xs leading-5 text-black/50">{status}</p></div>
               ) : busy ? (
                 <div><span className="mb-6 grid size-14 place-items-center rounded-full bg-[#d8ff58]"><Cpu className="size-5 animate-pulse" /></span><p className="font-mono text-[10px] uppercase tracking-[0.16em] text-black/40">{status}</p><p className="mt-3 text-4xl font-medium leading-tight tracking-[-0.045em]">No request left<br />your browser.</p>{runtime === 'loading' && <div className="mt-7 h-1.5 bg-black/[.07]"><span className="block h-full bg-[#678f00] transition-[width]" style={{ width: `${Math.max(progress, 6)}%` }} /></div>}</div>
               ) : (
