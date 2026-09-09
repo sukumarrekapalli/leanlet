@@ -265,24 +265,58 @@ const languageSignals = {
   English: ['the', 'is', 'my', 'how', 'where', 'please'],
   Spanish: ['el', 'la', 'mi', 'cómo', 'dónde', 'por favor'],
   French: ['le', 'la', 'mon', 'comment', 'où', 'merci'],
+  German: ['der', 'die', 'das', 'mein', 'wie', 'bitte'],
+  Portuguese: ['o', 'a', 'meu', 'como', 'onde', 'obrigado'],
+  Italian: ['il', 'la', 'mio', 'come', 'dove', 'grazie'],
 } as const;
+
+const scriptLanguages: Array<[string, RegExp]> = [
+  ['Telugu', /\p{Script=Telugu}/u],
+  ['Kannada', /\p{Script=Kannada}/u],
+  ['Tamil', /\p{Script=Tamil}/u],
+  ['Malayalam', /\p{Script=Malayalam}/u],
+  ['Bengali', /\p{Script=Bengali}/u],
+  ['Gujarati', /\p{Script=Gujarati}/u],
+  ['Hindi / Devanagari', /\p{Script=Devanagari}/u],
+  ['Punjabi / Gurmukhi', /\p{Script=Gurmukhi}/u],
+  ['Arabic', /\p{Script=Arabic}/u],
+  ['Russian / Cyrillic', /\p{Script=Cyrillic}/u],
+  ['Korean', /\p{Script=Hangul}/u],
+  ['Japanese', /[\p{Script=Hiragana}\p{Script=Katakana}]/u],
+  ['Chinese', /\p{Script=Han}/u],
+  ['Thai', /\p{Script=Thai}/u],
+];
+
+function hasLanguageSignal(input: string, signal: string) {
+  const words: string[] = input.toLocaleLowerCase().match(/\p{L}+/gu) ?? [];
+  if (signal.includes(' ')) return input.toLocaleLowerCase().includes(signal);
+  return words.includes(signal);
+}
+
+function detectLanguage(text: string) {
+  const scriptMatch = scriptLanguages.find(([, pattern]) => pattern.test(text));
+  if (scriptMatch)
+    return { language: scriptMatch[0], score: 1, evidence: 'writing system' };
+
+  const ranked = Object.entries(languageSignals)
+    .map(([language, signals]) => ({
+      language,
+      score: signals.reduce(
+        (score, signal) => score + (hasLanguageSignal(text, signal) ? 1 : 0),
+        0,
+      ),
+    }))
+    .sort((a, b) => b.score - a.score)[0];
+
+  return {
+    ...ranked,
+    evidence: ranked.score ? 'word signals' : 'no signal',
+  };
+}
 
 function LanguageDemo() {
   const [text, setText] = useState('¿Dónde está mi pedido?');
-  const result = useMemo(
-    () =>
-      Object.entries(languageSignals)
-        .map(([language, signals]) => ({
-          language,
-          score: signals.reduce(
-            (score, signal) =>
-              score + (text.toLowerCase().includes(signal) ? 1 : 0),
-            0,
-          ),
-        }))
-        .sort((a, b) => b.score - a.score)[0],
-    [text],
-  );
+  const result = useMemo(() => detectLanguage(text), [text]);
   return (
     <div className="case-demo-body">
       <label className="micro-label" htmlFor="language-input">
@@ -295,13 +329,14 @@ function LanguageDemo() {
         rows={3}
       />
       <div className="micro-result">
-        <span>Detected route</span>
+        <span>Detected language</span>
         <strong>{result.score ? result.language : 'Unknown'}</strong>
-        <b>{result.score} signals</b>
+        <b>{result.evidence}</b>
       </div>
       <p className="micro-foot">
-        A compact language model can replace this inspectable baseline when
-        broader coverage is required.
+        This baseline identifies writing systems first, then checks a small
+        Latin-language vocabulary. Use a language-ID model when languages share
+        scripts or coverage must be broader.
       </p>
     </div>
   );
