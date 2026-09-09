@@ -1,6 +1,6 @@
 {
   "name": "leanlet-ai",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Run scoped, task-specific inference inside web applications.",
   "type": "module",
   "license": "Apache-2.0",
