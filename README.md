@@ -36,6 +36,14 @@ console.log(result.category, result.confidence);
 classifier.destroy();
 ```
 
+### Diagnostics
+
+Pass `debug: true` to `VisionLeanlet` while integrating. Leanlet then writes
+typed lifecycle events to the page console and model-load/inference diagnostics
+to the `leanlet-vision` worker console. In Chromium DevTools, open **Sources →
+Threads → leanlet-vision** to inspect the worker. Keep the option disabled in
+normal production operation.
+
 `defineLeanlet()` supplies lazy loading, running, and disposal for non-vision
 capabilities such as embedded linear models, online rankers, statistical
 detectors, and custom workers. It does not supply a model runtime or worker by

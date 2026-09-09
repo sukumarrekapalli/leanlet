@@ -33,6 +33,8 @@ export type VisionLeanletOptions = {
     assetBase?: string;
     threads?: number;
     workerUrl?: URL;
+    /** Writes lifecycle events and worker diagnostics to browser DevTools. Defaults to false. */
+    debug?: boolean;
 };
 export type ClassifyOptions = {
     categories?: readonly string[];

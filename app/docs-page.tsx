@@ -416,6 +416,12 @@ await classifier.classify(file);`}</Code>
                   <b>URL</b> · optional custom worker entry
                 </span>
               </div>
+              <div>
+                <code>debug</code>
+                <span>
+                  <b>boolean</b> · optional DevTools diagnostics; default false
+                </span>
+              </div>
             </div>
             <p>
               <code>assetBase</code> must include the directory that contains
@@ -423,6 +429,19 @@ await classifier.classify(file);`}</Code>
               the current document directory, so applications deployed below a
               nested route will usually set it explicitly.
             </p>
+            <p>
+              Set <code>debug: true</code> while integrating to write structured
+              lifecycle events to the page console and runtime diagnostics to
+              the dedicated worker console. Disable it in normal production
+              operation unless diagnostic logging is required.
+            </p>
+            <Code>{`const classifier = new VisionLeanlet({
+  assetBase: '/leanlet-assets/',
+  debug: true,
+});
+
+// Main-page DevTools Console: status, result, and error events.
+// Sources → Threads → leanlet-vision: worker-level load and inference diagnostics.`}</Code>
             <h3>
               <code>classify(file, options?)</code>
             </h3>

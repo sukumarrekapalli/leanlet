@@ -58,6 +58,24 @@ try {
 
 `classify()` accepts an image `Blob` or `File` and returns:
 
+## Diagnostics
+
+Set `debug: true` while integrating to write structured lifecycle events to
+the page console and model-load/classification diagnostics to the dedicated
+worker console:
+
+```ts
+const classifier = new VisionLeanlet({
+  assetBase: '/leanlet-assets/',
+  debug: true,
+});
+```
+
+In Chromium DevTools, open **Sources → Threads → leanlet-vision** to inspect
+the worker. In the main Console, `classifier.subscribe()` receives the same
+typed status, result, and error events. Disable `debug` in normal production
+operation unless you are investigating an issue.
+
 ```ts
 type CategoryResult = {
   category: string;

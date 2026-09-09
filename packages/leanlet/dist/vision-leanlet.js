@@ -10,18 +10,32 @@ export class VisionLeanlet {
         this.options = {
             model: options.model ?? 'mobileclip-s0',
             categories: options.categories ?? DEFAULT_PRODUCT_CATEGORIES,
-            assetBase: options.assetBase ?? (typeof document === 'undefined' ? '/' : new URL('.', document.baseURI).href),
+            assetBase: options.assetBase ??
+                (typeof document === 'undefined'
+                    ? '/'
+                    : new URL('.', document.baseURI).href),
             threads: Math.max(1, Math.min(options.threads ?? 1, 4)),
             workerUrl: options.workerUrl,
+            debug: options.debug ?? false,
         };
         this.createWorker();
     }
-    get model() { return LEANLET_MODELS[this.options.model]; }
+    get model() {
+        return LEANLET_MODELS[this.options.model];
+    }
     createWorker() {
         this.worker = this.options.workerUrl
-            ? new Worker(this.options.workerUrl, { type: 'module', name: 'leanlet-vision' })
-            : new Worker(new URL('./vision.worker.js', import.meta.url), { type: 'module', name: 'leanlet-vision' });
+            ? new Worker(this.options.workerUrl, {
+                type: 'module',
+                name: 'leanlet-vision',
+            })
+            : new Worker(new URL('./vision.worker.js', import.meta.url), {
+                type: 'module',
+                name: 'leanlet-vision',
+            });
         this.worker.onmessage = ({ data }) => {
+            if (this.options.debug)
+                console.debug('[leanlet:vision]', data);
             if (data.type === 'result') {
                 this.pending.get(data.requestId)?.resolve(data.result);
                 this.pending.delete(data.requestId);
@@ -34,6 +48,8 @@ export class VisionLeanlet {
         };
         this.worker.onerror = (event) => {
             const error = new Error(event.message || 'Leanlet worker failed.');
+            if (this.options.debug)
+                console.error('[leanlet:vision] Worker error', error);
             this.pending.forEach(({ reject }) => reject(error));
             this.pending.clear();
         };
@@ -52,11 +68,18 @@ export class VisionLeanlet {
         this.options.model = model;
         this.createWorker();
     }
-    warmup() { this.worker.postMessage({ type: 'warmup' }); }
+    warmup() {
+        this.worker.postMessage({ type: 'warmup' });
+    }
     classify(file, options = {}) {
         const requestId = crypto.randomUUID();
         const request = new Promise((resolve, reject) => this.pending.set(requestId, { resolve, reject }));
-        this.worker.postMessage({ type: 'classify', file, requestId, categories: options.categories });
+        this.worker.postMessage({
+            type: 'classify',
+            file,
+            requestId,
+            categories: options.categories,
+        });
         return request;
     }
     destroy() {
