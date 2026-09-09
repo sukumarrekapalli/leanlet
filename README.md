@@ -2,9 +2,11 @@
 
 [Documentation](https://sukumarrekapalli.github.io/leanlet/docs/) · [Live demos](https://sukumarrekapalli.github.io/leanlet/) · [npm package](https://www.npmjs.com/package/leanlet-ai)
 
-Leanlet is an open-source framework for adding small, task-specific intelligence
-to web applications. Models, workers, and runtime assets are deployed with the
-application; inference runs in the browser without an inference API.
+Leanlet is an open-source library for bounded, task-specific intelligence in
+web applications. Its `VisionLeanlet` runtime deploys models, a module worker,
+and runtime assets with the application; image inference runs in the browser
+without an inference API. `defineLeanlet` is a generic lifecycle wrapper for an
+implementation supplied by the application.
 
 The repository contains:
 
@@ -34,29 +36,32 @@ console.log(result.category, result.confidence);
 classifier.destroy();
 ```
 
-`defineLeanlet()` supplies the same lifecycle boundary for non-vision
+`defineLeanlet()` supplies lazy loading, running, and disposal for non-vision
 capabilities such as embedded linear models, online rankers, statistical
-detectors, and custom workers.
+detectors, and custom workers. It does not supply a model runtime or worker by
+itself.
 
 ## Supported vision profiles
 
-| Profile                 | Approximate model download | Category system       | Intended use                               |
-| ----------------------- | -------------------------: | --------------------- | ------------------------------------------ |
-| `mobileclip-s0`         |                      89 MB | Application-defined   | Full-precision vision profile              |
-| `mobileclip-s0-fp16`    |                      66 MB | Application-defined   | Middle-sized vision profile                |
-| `mobileclip-s0-compact` |                      55 MB | Application-defined   | Quantized vision profile                   |
-| `mobilenet-v4-medium`   |                      10 MB | Fixed ImageNet labels | Larger known-object classifier             |
-| `mobilenet-v4-small`    |                     3.9 MB | Fixed ImageNet labels | Small known-object classifier              |
+| Profile                 | Approximate model download | Category system       | Intended use                   |
+| ----------------------- | -------------------------: | --------------------- | ------------------------------ |
+| `mobileclip-s0`         |                      89 MB | Application-defined   | Full-precision vision profile  |
+| `mobileclip-s0-fp16`    |                      66 MB | Application-defined   | Middle-sized vision profile    |
+| `mobileclip-s0-compact` |                      55 MB | Application-defined   | Quantized vision profile       |
+| `mobilenet-v4-medium`   |                      10 MB | Fixed ImageNet labels | Larger known-object classifier |
+| `mobilenet-v4-small`    |                     3.9 MB | Fixed ImageNet labels | Small known-object classifier  |
 
-Only the selected profile loads. Model assets are excluded from the npm package
-so applications can control licensing, cache policy, provenance, and delivery.
+Only the active profile is loaded by a `VisionLeanlet` worker. The asset CLI
+installs one requested profile at a time, so applications must bundle every
+profile they expose. Model assets are excluded from the npm package so
+applications can control licensing, cache policy, provenance, and delivery.
 
 ## Architecture
 
 ```text
-application input
+image input
       ↓
-typed Leanlet contract
+VisionLeanlet contract
       ↓
 dedicated module worker
       ↓
@@ -113,6 +118,7 @@ Before deploying a Leanlet capability:
 - version model files and cache headers deliberately;
 - publish model provenance, license, and intended-use notes;
 - verify the Content Security Policy for module workers and local assets;
+- use cross-origin isolation only when enabling multiple ONNX Runtime threads;
 - test current Chrome, Edge, Firefox, and Safari releases, including mobile.
 
 The live examples demonstrate the integration contract. They are not a
