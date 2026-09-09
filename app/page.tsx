@@ -2,12 +2,14 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  AppWindow,
   ArrowRight,
   Box,
   Check,
   ChevronRight,
   Code2,
   Cpu,
+  Database,
   FileText,
   Gauge,
   GitFork,
@@ -36,12 +38,14 @@ import { NpmMark } from '@/components/npm-mark';
 
 type RuntimeState = 'idle' | 'loading' | 'ready' | 'running' | 'error';
 const modelOrder: LeanletModelId[] = [
-  'mobileclip-s0',
-  'mobileclip-s0-fp16',
-  'mobileclip-s0-compact',
   'mobilenet-v4-medium',
+  'mobileclip-s0-fp16',
+  'mobileclip-s0',
+  'mobileclip-s0-compact',
   'mobilenet-v4-small',
 ];
+
+const DEFAULT_DEMO_MODEL: LeanletModelId = 'mobilenet-v4-medium';
 
 const platformFeatures = [
   {
@@ -94,7 +98,7 @@ export default function Home() {
   const inputRef = useRef<HTMLInputElement>(null);
   const leanletRef = useRef<VisionLeanlet | null>(null);
   const [selectedModel, setSelectedModel] =
-    useState<LeanletModelId>('mobileclip-s0');
+    useState<LeanletModelId>(DEFAULT_DEMO_MODEL);
   const [preview, setPreview] = useState<string | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const [fileName, setFileName] = useState('');
@@ -102,11 +106,15 @@ export default function Home() {
   const [runtime, setRuntime] = useState<RuntimeState>('idle');
   const [status, setStatus] = useState('Loads only when you run it');
   const [progress, setProgress] = useState(0);
+  const [loadSeconds, setLoadSeconds] = useState(0);
   const [result, setResult] = useState<CategoryResult | null>(null);
+  const busy = runtime === 'loading' || runtime === 'running';
+  const model = LEANLET_MODELS[selectedModel];
+  const estimatedFirstLoadMB = Math.ceil(model.sizeMB + 22);
 
   useEffect(() => {
     const leanlet = new VisionLeanlet({
-      model: 'mobileclip-s0',
+      model: DEFAULT_DEMO_MODEL,
       categories: DEFAULT_PRODUCT_CATEGORIES,
     });
     leanletRef.current = leanlet;
@@ -114,7 +122,8 @@ export default function Home() {
       if (event.type === 'status') {
         setRuntime(event.state);
         setStatus(event.message);
-        if (event.progress !== undefined) setProgress(event.progress);
+        if (event.progress !== undefined)
+          setProgress((current) => Math.max(current, event.progress ?? 0));
       } else if (event.type === 'result') setResult(event.result);
       else {
         setRuntime('error');
@@ -128,6 +137,16 @@ export default function Home() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!busy) return;
+    const started = Date.now();
+    const timer = window.setInterval(
+      () => setLoadSeconds(Math.floor((Date.now() - started) / 1000)),
+      1000,
+    );
+    return () => window.clearInterval(timer);
+  }, [busy, selectedModel]);
+
   const chooseModel = (model: LeanletModelId) => {
     if (model === selectedModel) return;
     setSelectedModel(model);
@@ -135,6 +154,7 @@ export default function Home() {
     setResult(null);
     setRuntime('idle');
     setProgress(0);
+    setLoadSeconds(0);
     setStatus('Loads only when you run it');
   };
 
@@ -147,6 +167,7 @@ export default function Home() {
     setFile(next);
     setFileName(next.name);
     setResult(null);
+    setLoadSeconds(0);
   }, []);
 
   useEffect(() => {
@@ -176,9 +197,6 @@ export default function Home() {
     );
     void leanletRef.current.classify(file).catch(() => undefined);
   };
-
-  const busy = runtime === 'loading' || runtime === 'running';
-  const model = LEANLET_MODELS[selectedModel];
 
   return (
     <main id="top" className="min-h-screen bg-white text-[#0b1220]">
@@ -346,7 +364,9 @@ export default function Home() {
                     <small>{item.strength}</small>
                   </span>
                   <span className="model-meta">
-                    <b>{item.tier}</b>
+                    <b>
+                      {id === DEFAULT_DEMO_MODEL ? 'Quick demo' : item.tier}
+                    </b>
                     <em>{item.sizeMB} MB</em>
                   </span>
                 </button>
@@ -464,7 +484,15 @@ export default function Home() {
                         <Cpu />
                       </i>
                       <p className="demo-label">{status}</p>
-                      <h3>Leanlet is processing the image in this browser.</h3>
+                      <h3>Loading the selected runtime in this browser.</h3>
+                      <p className="load-detail">
+                        <b>{loadSeconds}s elapsed</b>
+                        <span>
+                          First use may transfer about {estimatedFirstLoadMB} MB
+                          including the shared runtime. Keep this tab open;
+                          later runs can use the browser cache.
+                        </span>
+                      </p>
                       {runtime === 'loading' && (
                         <span className="load-track">
                           <i style={{ width: `${Math.max(progress, 5)}%` }} />
@@ -477,7 +505,11 @@ export default function Home() {
                         <ScanSearch />
                       </i>
                       <p className="demo-label">Ready when you are</p>
-                      <h3>Classify against your real taxonomy.</h3>
+                      <h3>
+                        {model.task === 'zero-shot-image-classification'
+                          ? 'Classify against your real taxonomy.'
+                          : 'Run a fast fixed-vocabulary preview.'}
+                      </h3>
                       <small>{model.limitation}</small>
                     </div>
                   )}
@@ -539,25 +571,99 @@ export default function Home() {
               </article>
             ))}
           </div>
-          <div className="architecture-band">
-            <div>
-              <p className="section-kicker light">Execution path</p>
-              <h3>One contract from interface to inference.</h3>
+          <div className="runtime-map" id="how-it-works">
+            <div className="runtime-map-heading">
+              <div>
+                <p className="section-kicker light">How it works</p>
+                <h3>Static assets enter. Inference stays in the browser.</h3>
+              </div>
+              <p>
+                Leanlet downloads the selected model and ONNX runtime from the
+                application origin. It does not send the input to an inference
+                endpoint.
+              </p>
             </div>
-            <div className="architecture-flow">
-              {[
-                ['01', 'Application'],
-                ['02', 'Leanlet API'],
-                ['03', 'Web Worker'],
-                ['04', 'ONNX + WASM'],
-                ['05', 'Typed result'],
-              ].map(([num, label], i) => (
-                <span key={label}>
-                  <i>{num}</i>
-                  <b>{label}</b>
-                  {i < 4 && <ArrowRight />}
-                </span>
-              ))}
+            <div className="runtime-map-canvas">
+              <article className="origin-node">
+                <Box />
+                <span>Application origin</span>
+                <strong>JavaScript · model · WASM</strong>
+                <small>Network transfer on first use or asset update</small>
+              </article>
+              <div className="map-arrow inbound">
+                <span>versioned assets</span>
+                <ArrowRight />
+              </div>
+              <div className="browser-boundary">
+                <header>
+                  <span>
+                    <AppWindow /> User&apos;s browser
+                  </span>
+                  <b>No inference API</b>
+                </header>
+                <div className="browser-flow">
+                  <article>
+                    <span>01</span>
+                    <strong>Application UI</strong>
+                    <small>Image, text, or structured input</small>
+                  </article>
+                  <ArrowRight />
+                  <article>
+                    <span>02</span>
+                    <strong>Leanlet contract</strong>
+                    <small>Typed input, lifecycle, cancellation</small>
+                  </article>
+                  <ArrowRight />
+                  <article>
+                    <span>03</span>
+                    <strong>Dedicated worker</strong>
+                    <small>Work stays off the UI thread</small>
+                  </article>
+                  <ArrowRight />
+                  <article>
+                    <span>04</span>
+                    <strong>ONNX + WASM</strong>
+                    <small>Selected model executes locally</small>
+                  </article>
+                </div>
+                <div className="browser-return">
+                  <div>
+                    <Code2 />
+                    <span>
+                      <strong>Typed result</strong>
+                      <small>Ranked output · score · timing</small>
+                    </span>
+                  </div>
+                  <ArrowRight />
+                  <div>
+                    <ShieldCheck />
+                    <span>
+                      <strong>Application decision</strong>
+                      <small>Threshold · fallback · user correction</small>
+                    </span>
+                  </div>
+                  <div className="cache-node">
+                    <Database />
+                    <span>
+                      <strong>Browser HTTP cache</strong>
+                      <small>Reuse follows the site&apos;s cache headers</small>
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="runtime-map-legend">
+              <span>
+                <i className="network-dot" /> Network: static asset delivery
+              </span>
+              <span>
+                <i className="local-dot" /> Local: input processing and
+                inference
+              </span>
+              <span>
+                <i className="app-dot" /> Application-owned: acceptance and
+                fallback
+              </span>
             </div>
           </div>
         </div>

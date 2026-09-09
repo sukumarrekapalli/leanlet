@@ -692,6 +692,21 @@ input:focus-visible {
   background: var(--blue);
   transition: width 0.2s ease;
 }
+.load-detail {
+  display: grid;
+  max-width: 470px;
+  gap: 6px;
+  margin-top: 16px;
+  color: #748096;
+  font-size: 11px;
+  line-height: 1.65;
+}
+.load-detail b {
+  color: #2b5dc4;
+  font: 600 10px/1 var(--font-mono);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
 .error-result > i {
   background: #fff0f1;
   color: #d33d4a;
@@ -829,6 +844,235 @@ input:focus-visible {
 .architecture-flow svg {
   width: 13px;
   color: #4e607e;
+}
+.runtime-map {
+  margin-top: 22px;
+  overflow: hidden;
+  border-radius: 16px;
+  background: #071326;
+  color: #fff;
+}
+.runtime-map-heading {
+  display: grid;
+  gap: 28px;
+  padding: 34px 34px 26px;
+  grid-template-columns: 1fr minmax(300px, 0.72fr);
+}
+.runtime-map-heading h3 {
+  max-width: 610px;
+  margin-top: 10px;
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 1.02;
+  letter-spacing: -0.04em;
+}
+.runtime-map-heading > p {
+  align-self: end;
+  color: #b3c0d7;
+  font-size: 12px;
+  line-height: 1.75;
+}
+.runtime-map-canvas {
+  display: grid;
+  align-items: center;
+  gap: 12px;
+  padding: 0 34px 34px;
+  grid-template-columns: minmax(160px, 0.34fr) 46px minmax(0, 1fr);
+}
+.origin-node {
+  display: grid;
+  min-height: 178px;
+  align-content: center;
+  border: 1px solid #304360;
+  border-radius: 12px;
+  background: #0d1d35;
+  padding: 18px;
+}
+.origin-node > svg {
+  width: 20px;
+  color: #8bb6ff;
+}
+.origin-node span,
+.origin-node strong,
+.origin-node small {
+  display: block;
+}
+.origin-node span {
+  margin-top: 20px;
+  color: #8aa7d4;
+  font: 600 8px/1 var(--font-mono);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.origin-node strong {
+  margin-top: 8px;
+  font-size: 12px;
+  line-height: 1.35;
+}
+.origin-node small {
+  margin-top: 9px;
+  color: #97a7c1;
+  font-size: 9px;
+  line-height: 1.5;
+}
+.map-arrow {
+  display: grid;
+  justify-items: center;
+  gap: 7px;
+  color: #76a6f7;
+}
+.map-arrow span {
+  color: #8da2c1;
+  font: 8px/1.3 var(--font-mono);
+  text-align: center;
+}
+.map-arrow svg {
+  width: 18px;
+}
+.browser-boundary {
+  min-width: 0;
+  border: 1px solid #426087;
+  border-radius: 13px;
+  background: linear-gradient(140deg, #0f2646, #091a31);
+  padding: 18px;
+}
+.browser-boundary > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #2c4568;
+}
+.browser-boundary > header span {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 650;
+}
+.browser-boundary > header svg {
+  width: 16px;
+  color: #83b1ff;
+}
+.browser-boundary > header b {
+  border-radius: 5px;
+  background: #143861;
+  padding: 6px 8px;
+  color: #a7c7ff;
+  font: 600 8px/1 var(--font-mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.browser-flow {
+  display: grid;
+  align-items: stretch;
+  gap: 9px;
+  margin-top: 18px;
+  grid-template-columns: minmax(0, 1fr) 14px minmax(0, 1fr) 14px minmax(
+      0,
+      1fr
+    ) 14px minmax(0, 1fr);
+}
+.browser-flow > article {
+  min-width: 0;
+  border: 1px solid #31517b;
+  border-radius: 9px;
+  background: rgba(6, 18, 35, 0.48);
+  padding: 12px;
+}
+.browser-flow article > span,
+.browser-flow article strong,
+.browser-flow article small {
+  display: block;
+}
+.browser-flow article > span {
+  color: #7cb0ff;
+  font: 600 8px/1 var(--font-mono);
+}
+.browser-flow article strong {
+  margin-top: 10px;
+  font-size: 11px;
+  line-height: 1.25;
+}
+.browser-flow article small {
+  margin-top: 6px;
+  color: #9eafc9;
+  font-size: 8px;
+  line-height: 1.5;
+}
+.browser-flow > svg,
+.browser-return > svg {
+  width: 14px;
+  align-self: center;
+  color: #77a9f7;
+}
+.browser-return {
+  display: grid;
+  align-items: center;
+  gap: 10px;
+  margin-top: 13px;
+  grid-template-columns: minmax(0, 1fr) 14px minmax(0, 1fr) minmax(0, 1fr);
+}
+.browser-return > div {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 9px;
+  border: 1px solid #294766;
+  border-radius: 8px;
+  background: #0b1e37;
+  padding: 10px;
+}
+.browser-return > div > svg {
+  width: 16px;
+  flex-shrink: 0;
+  color: #7db0ff;
+}
+.browser-return strong,
+.browser-return small {
+  display: block;
+}
+.browser-return strong {
+  font-size: 9px;
+}
+.browser-return small {
+  margin-top: 3px;
+  color: #9cacc5;
+  font-size: 8px;
+  line-height: 1.35;
+}
+.browser-return .cache-node {
+  border-color: #385f85;
+  background: #102b4c;
+}
+.runtime-map-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px 22px;
+  border-top: 1px solid #213956;
+  padding: 16px 34px;
+  color: #a7b7cf;
+  font-size: 9px;
+}
+.runtime-map-legend span {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.runtime-map-legend i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+.network-dot {
+  background: #75a7ff;
+}
+.local-dot {
+  background: #4ee1b0;
+}
+.app-dot {
+  background: #f5be66;
 }
 .cases-section {
   border-top: 1px solid var(--line);
@@ -1524,6 +1768,24 @@ footer {
     gap: 30px;
     grid-template-columns: 1fr;
   }
+  .runtime-map-heading,
+  .runtime-map-canvas {
+    grid-template-columns: 1fr;
+  }
+  .runtime-map-canvas {
+    gap: 16px;
+  }
+  .origin-node {
+    min-height: auto;
+  }
+  .map-arrow.inbound {
+    justify-items: start;
+    grid-auto-flow: column;
+    justify-content: start;
+  }
+  .map-arrow.inbound svg {
+    transform: rotate(90deg);
+  }
   .model-table-head {
     display: none;
   }
@@ -1634,6 +1896,35 @@ footer {
   .architecture-flow > span svg {
     margin-left: auto;
     transform: rotate(90deg);
+  }
+  .runtime-map-heading,
+  .runtime-map-canvas {
+    padding-right: 20px;
+    padding-left: 20px;
+  }
+  .runtime-map-heading {
+    padding-top: 26px;
+    padding-bottom: 20px;
+  }
+  .runtime-map-canvas {
+    padding-bottom: 26px;
+  }
+  .browser-flow {
+    grid-template-columns: 1fr;
+  }
+  .browser-flow > svg {
+    justify-self: center;
+    transform: rotate(90deg);
+  }
+  .browser-return {
+    grid-template-columns: 1fr;
+  }
+  .browser-return > svg {
+    justify-self: center;
+    transform: rotate(90deg);
+  }
+  .runtime-map-legend {
+    padding: 16px 20px;
   }
   .model-table-row {
     gap: 13px;
