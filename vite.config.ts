@@ -13,16 +13,13 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': rootDir,
-      '@sukumar09/leanlet': path.join(
-        rootDir,
-        'packages/leanlet/dist/index.js',
-      ),
+      'leanlet-ai': path.join(rootDir, 'packages/leanlet/dist/index.js'),
     },
   },
   plugins: [react()],
   build: {
     outDir: 'dist/client',
-    rollupOptions: {
+    rolldownOptions: {
       input: {
         main: path.join(rootDir, 'index.html'),
         docs: path.join(rootDir, 'docs/index.html'),

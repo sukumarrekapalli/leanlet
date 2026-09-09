@@ -14,11 +14,13 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: 'Leanlet — Ship less AI. Build smarter.',
-  description: 'An open-source framework for lightweight, intrinsic AI that runs entirely in the browser.',
+  description:
+    'An open-source framework for lightweight, intrinsic AI that runs entirely in the browser.',
   icons: { icon: '/favicon.svg' },
   openGraph: {
     title: 'Leanlet — Ship less AI. Build smarter.',
-    description: 'Small, task-specific AI shipped inside the software. No API required.',
+    description:
+      'Scoped, task-specific inference that runs in supported web browsers.',
     images: ['/leanlet-social-preview.png'],
   },
 };

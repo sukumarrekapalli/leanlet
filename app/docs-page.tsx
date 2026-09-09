@@ -11,6 +11,7 @@ import {
   Package,
   ShieldCheck,
 } from 'lucide-react';
+import { NpmMark } from '@/components/npm-mark';
 
 const sections = [
   ['overview', 'Overview'],
@@ -37,24 +38,6 @@ function Logo() {
         Leanlet
       </span>
     </span>
-  );
-}
-function NpmMark() {
-  return (
-    <svg className="npm-mark" aria-hidden="true" viewBox="0 0 64 24">
-      <rect width="64" height="24" rx="2" fill="#cb3837" />
-      <text
-        x="32"
-        y="17"
-        fill="white"
-        fontFamily="Arial, sans-serif"
-        fontSize="15"
-        fontWeight="700"
-        textAnchor="middle"
-      >
-        npm
-      </text>
-    </svg>
   );
 }
 function Code({ children }: { children: string }) {
@@ -96,7 +79,7 @@ export default function Docs() {
           </nav>
           <a
             className="nav-install ml-5 hidden lg:inline-flex"
-            href="https://www.npmjs.com/package/@sukumar09/leanlet"
+            href="https://www.npmjs.com/package/leanlet-ai"
             target="_blank"
             rel="noreferrer"
           >
@@ -129,14 +112,15 @@ export default function Docs() {
         </aside>
         <article className="docs-content">
           <section id="overview" className="docs-intro">
-            <div className="docs-badge">v0.1 · Core package</div>
+            <div className="docs-badge">v0.2 · Core package</div>
             <h1>Leanlet documentation</h1>
             <p>
               Leanlet is a browser-native framework for shipping small,
               task-specific machine-learning models as part of a web
               application. It provides model selection, off-main-thread
               execution, local asset loading, lifecycle events, and typed
-              results without requiring an inference API.
+              results without requiring a hosted inference endpoint for those
+              features.
             </p>
             <div className="docs-callout blue">
               <ShieldCheck />
@@ -158,7 +142,7 @@ export default function Docs() {
               Install the public package from npm, then add only the model
               assets required by the feature.
             </p>
-            <Code>{`npm install @sukumar09/leanlet
+            <Code>{`npm install leanlet-ai
 npx leanlet models add mobileclip-s0 --dir public/leanlet-assets`}</Code>
             <h3>Runtime requirements</h3>
             <ul>
@@ -182,7 +166,7 @@ npx leanlet models add mobileclip-s0 --dir public/leanlet-assets`}</Code>
               categories your product understands, and dispose it with the
               surrounding UI.
             </p>
-            <Code>{`import { VisionLeanlet } from '@sukumar09/leanlet';
+            <Code>{`import { VisionLeanlet } from 'leanlet-ai';
 
 const classifier = new VisionLeanlet({
   model: 'mobileclip-s0',
@@ -271,6 +255,27 @@ public/leanlet-assets/
               </div>
               <div>
                 <span>
+                  <strong>mobileclip-s0-fp16</strong>
+                  <small>Balanced</small>
+                </span>
+                <span>~66 MB</span>
+                <span>
+                  Custom labels with an FP16 vision encoder; validate support
+                  and quality on target browsers.
+                </span>
+              </div>
+              <div>
+                <span>
+                  <strong>mobilenet-v4-medium</strong>
+                  <small>Fixed vocabulary</small>
+                </span>
+                <span>~10 MB</span>
+                <span>
+                  Known ImageNet objects when the Small profile is insufficient.
+                </span>
+              </div>
+              <div>
+                <span>
                   <strong>mobilenet-v4-small</strong>
                   <small>Specialized</small>
                 </span>
@@ -281,9 +286,11 @@ public/leanlet-assets/
               </div>
             </div>
             <p>
-              Only the selected profile is loaded. Switching models creates a
-              fresh worker and releases the previous runtime. The browser cache
-              may retain downloaded files according to your hosting headers.
+              Only the selected profile is loaded. Profile sizes are rounded
+              weight totals and exclude shared runtime files. Switching models
+              creates a fresh worker and releases the previous runtime. The
+              browser cache may retain downloaded files according to your
+              hosting headers.
             </p>
             <Code>{`classifier.setModel('mobileclip-s0-compact');
 await classifier.classify(file);`}</Code>
@@ -315,11 +322,11 @@ await classifier.classify(file);`}</Code>
             </ul>
             <h3>Evaluation strategy</h3>
             <p>
-              Start with the accurate MobileCLIP profile when the label set is
-              application-defined. Build a representative labeled evaluation
-              set, measure per-category precision and recall, and move to a
-              fine-tuned compact model only when the observed volume or latency
-              requirements justify it.
+              For application-defined labels, compare the MobileCLIP profiles on
+              a representative labeled set. Measure per-category precision,
+              recall, loading cost, memory, and latency. A fixed-vocabulary or
+              domain-trained compact model may be preferable when its labels and
+              measured behavior fit the task.
             </p>
           </section>
 
@@ -447,17 +454,17 @@ await classifier.classify(file);`}</Code>
             <p className="docs-kicker">Project</p>
             <h2>Open source</h2>
             <p>
-              Leanlet’s framework code is Apache-2.0 licensed. Model weights retain
-              their upstream licenses and notices. Review{' '}
+              Leanlet’s framework code is Apache-2.0 licensed. Model weights
+              retain their upstream licenses and notices. Review{' '}
               <code>MODEL_LICENSES.md</code> before redistributing model assets.
             </p>
             <div className="docs-links">
               <a
-                href="https://www.npmjs.com/package/@sukumar09/leanlet"
+                href="https://www.npmjs.com/package/leanlet-ai"
                 target="_blank"
                 rel="noreferrer"
               >
-                <NpmMark /> @sukumar09/leanlet on npm
+                <NpmMark /> leanlet-ai on npm
               </a>
               <a href="../">
                 <ArrowLeft /> Project home

@@ -1,6 +1,6 @@
 # Leanlet
 
-[Documentation](https://sukumarrekapalli.github.io/leanlet/docs/) · [Live demos](https://sukumarrekapalli.github.io/leanlet/) · [npm package](https://www.npmjs.com/package/@sukumar09/leanlet)
+[Documentation](https://sukumarrekapalli.github.io/leanlet/docs/) · [Live demos](https://sukumarrekapalli.github.io/leanlet/) · [npm package](https://www.npmjs.com/package/leanlet-ai)
 
 Leanlet is an open-source framework for adding small, task-specific intelligence
 to web applications. Models, workers, and runtime assets are deployed with the
@@ -8,18 +8,19 @@ application; inference runs in the browser without an inference API.
 
 The repository contains:
 
-- the `@sukumar09/leanlet` TypeScript package in `packages/leanlet`;
+- the `leanlet-ai` TypeScript package in `packages/leanlet`;
 - an interactive framework website and product-classification reference app;
-- live examples for text routing, adaptive ranking, and anomaly detection;
+- live examples for vision, routing, ranking, detection, retrieval, language,
+  forecasting, and record matching;
 - a complete documentation site under `/docs/`;
 - a GitHub Pages deployment workflow.
 
-The framework package is published on npm as `@sukumar09/leanlet`.
+The framework package is published on npm as `leanlet-ai`.
 
 ## Core API
 
 ```ts
-import { VisionLeanlet } from '@sukumar09/leanlet';
+import { VisionLeanlet } from 'leanlet-ai';
 
 const classifier = new VisionLeanlet({
   model: 'mobileclip-s0',
@@ -41,9 +42,11 @@ detectors, and custom workers.
 
 | Profile                 | Approximate model download | Category system       | Intended use                               |
 | ----------------------- | -------------------------: | --------------------- | ------------------------------------------ |
-| `mobileclip-s0`         |                      89 MB | Application-defined   | Accuracy-oriented zero-shot classification |
-| `mobileclip-s0-compact` |                      55 MB | Application-defined   | Lower first-load and memory budget         |
-| `mobilenet-v4-small`    |                     3.9 MB | Fixed ImageNet labels | Very small known-object classification     |
+| `mobileclip-s0`         |                      89 MB | Application-defined   | Full-precision vision profile              |
+| `mobileclip-s0-fp16`    |                      66 MB | Application-defined   | Middle-sized vision profile                |
+| `mobileclip-s0-compact` |                      55 MB | Application-defined   | Quantized vision profile                   |
+| `mobilenet-v4-medium`   |                      10 MB | Fixed ImageNet labels | Larger known-object classifier             |
+| `mobilenet-v4-small`    |                     3.9 MB | Fixed ImageNet labels | Small known-object classifier              |
 
 Only the selected profile loads. Model assets are excluded from the npm package
 so applications can control licensing, cache policy, provenance, and delivery.

@@ -1,4 +1,4 @@
-# @sukumar09/leanlet
+# leanlet-ai
 
 Browser-native infrastructure for shipping small, task-specific intelligence
 inside web applications. Leanlet gives each capability a typed input/output
@@ -7,14 +7,14 @@ contract, a bounded model lifecycle, and a deliberate fallback boundary.
 ## Install
 
 ```bash
-npm install @sukumar09/leanlet
+npm install leanlet-ai
 npx leanlet models add mobileclip-s0 --dir public/leanlet-assets
 ```
 
 ## Product image classification
 
 ```ts
-import { VisionLeanlet } from '@sukumar09/leanlet';
+import { VisionLeanlet } from 'leanlet-ai';
 
 const classifier = new VisionLeanlet({
   model: 'mobileclip-s0',
@@ -36,7 +36,7 @@ and distribution.
 ## Define another leanlet
 
 ```ts
-import { defineLeanlet } from '@sukumar09/leanlet';
+import { defineLeanlet } from 'leanlet-ai';
 
 const anomaly = defineLeanlet<number[], { anomalous: boolean }>({
   id: 'sensor-anomaly-v1',

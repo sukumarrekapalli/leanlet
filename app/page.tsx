@@ -30,13 +30,16 @@ import {
   type CategoryResult,
   type LeanletEvent,
   type LeanletModelId,
-} from '@sukumar09/leanlet';
+} from 'leanlet-ai';
 import { CasesSection } from '@/components/case-demos';
+import { NpmMark } from '@/components/npm-mark';
 
 type RuntimeState = 'idle' | 'loading' | 'ready' | 'running' | 'error';
 const modelOrder: LeanletModelId[] = [
   'mobileclip-s0',
+  'mobileclip-s0-fp16',
   'mobileclip-s0-compact',
+  'mobilenet-v4-medium',
   'mobilenet-v4-small',
 ];
 
@@ -75,25 +78,6 @@ function Logo() {
         Leanlet
       </span>
     </span>
-  );
-}
-
-function NpmMark() {
-  return (
-    <svg className="npm-mark" aria-hidden="true" viewBox="0 0 64 24" role="img">
-      <rect width="64" height="24" rx="2" fill="#cb3837" />
-      <text
-        x="32"
-        y="17"
-        fill="white"
-        fontFamily="Arial, sans-serif"
-        fontSize="15"
-        fontWeight="700"
-        textAnchor="middle"
-      >
-        npm
-      </text>
-    </svg>
   );
 }
 
@@ -215,12 +199,12 @@ export default function Home() {
           <div className="flex items-center gap-2">
             <a
               className="nav-install hidden sm:inline-flex"
-              href="https://www.npmjs.com/package/@sukumar09/leanlet"
+              href="https://www.npmjs.com/package/leanlet-ai"
               target="_blank"
               rel="noreferrer"
               aria-label="Leanlet package on npm"
             >
-              <NpmMark /> @sukumar09/leanlet
+              <NpmMark /> leanlet-ai
             </a>
             <a className="nav-cta" href="./docs/">
               Get started <ArrowRight className="size-3.5" />
@@ -242,9 +226,9 @@ export default function Home() {
               <span className="text-[#2762ff]">built into the web.</span>
             </h1>
             <p className="mt-7 max-w-2xl text-lg leading-8 text-[#536078] sm:text-xl">
-              Leanlet helps product teams ship small, task-specific models
-              inside web applications—private by default, cache-friendly, and
-              independent of inference APIs.
+              Leanlet helps product teams run bounded, task-specific inference
+              inside supported browsers. Assets can be cached with the app, and
+              inference does not require a hosted model endpoint.
             </p>
             <div className="mt-9 flex flex-col gap-3 sm:flex-row">
               <a href="#demo" className="primary-button">
@@ -256,20 +240,20 @@ export default function Home() {
             </div>
             <a
               className="npm-available"
-              href="https://www.npmjs.com/package/@sukumar09/leanlet"
+              href="https://www.npmjs.com/package/leanlet-ai"
               target="_blank"
               rel="noreferrer"
             >
               <NpmMark />
               <span>
                 <strong>Available on npm</strong>
-                <small>npm install @sukumar09/leanlet</small>
+                <small>npm install leanlet-ai</small>
               </span>
               <ArrowRight />
             </a>
             <div className="mt-10 flex flex-wrap gap-x-7 gap-y-3 text-sm text-[#5e6b82]">
               <span className="hero-proof">
-                <WifiOff /> No API calls
+                <WifiOff /> No inference API
               </span>
               <span className="hero-proof">
                 <LockKeyhole /> Inputs stay local
@@ -299,9 +283,7 @@ export default function Home() {
                 <span className="code-purple">import</span>{' '}
                 {'{ VisionLeanlet }'} <span className="code-purple">from</span>
                 {'\n'}{' '}
-                <span className="code-green">
-                  &apos;@sukumar09/leanlet&apos;
-                </span>
+                <span className="code-green">&apos;leanlet-ai&apos;</span>
                 {'\n\n'}
                 <span className="code-blue">const</span> vision ={' '}
                 <span className="code-purple">new</span> {'VisionLeanlet({'}
@@ -334,8 +316,8 @@ export default function Home() {
               <h2>Choose the model for the job.</h2>
             </div>
             <p>
-              Every option runs entirely in this page. Start accurate, step down
-              for constrained devices, or register a domain-specific model.
+              Each listed profile runs in this page. Compare quality, loading,
+              memory, and latency on the browsers and devices you support.
             </p>
           </div>
           <div
@@ -351,6 +333,7 @@ export default function Home() {
                   key={id}
                   type="button"
                   role="radio"
+                  aria-label={`${item.name}, ${item.sizeMB} megabytes`}
                   aria-checked={active}
                   onClick={() => chooseModel(id)}
                   className={active ? 'model-option active' : 'model-option'}
@@ -481,7 +464,7 @@ export default function Home() {
                         <Cpu />
                       </i>
                       <p className="demo-label">{status}</p>
-                      <h3>Your image never left this browser.</h3>
+                      <h3>Leanlet is processing the image in this browser.</h3>
                       {runtime === 'loading' && (
                         <span className="load-track">
                           <i style={{ width: `${Math.max(progress, 5)}%` }} />
@@ -535,7 +518,7 @@ export default function Home() {
           <div className="section-heading">
             <div>
               <p className="section-kicker">The framework</p>
-              <h2>A production boundary for small AI.</h2>
+              <h2>A defined boundary for browser inference.</h2>
             </div>
             <p>
               Leanlet separates application code from model infrastructure, so
@@ -652,7 +635,7 @@ export default function Home() {
             </h2>
             <p className="mt-6 text-lg leading-8 text-[#5d6980]">
               The npm package supplies model selection, worker isolation,
-              lifecycle events, ranked results, and safe teardown. Your app
+              lifecycle events, ranked results, and explicit cleanup. Your app
               supplies its categories, assets, thresholds, and fallback.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
@@ -667,16 +650,14 @@ export default function Home() {
           <div className="install-card">
             <div className="install-command">
               <span>$</span>
-              <code>npm install @sukumar09/leanlet</code>
-              <span>v0.1.0</span>
+              <code>npm install leanlet-ai</code>
+              <span>v0.2.0</span>
             </div>
             <pre>
               <code>
                 <span className="code-purple">import</span>{' '}
                 {'{ VisionLeanlet }'} <span className="code-purple">from</span>{' '}
-                <span className="code-green">
-                  &apos;@sukumar09/leanlet&apos;
-                </span>
+                <span className="code-green">&apos;leanlet-ai&apos;</span>
                 {'\n\n'}
                 <span className="code-blue">const</span> classifier ={' '}
                 <span className="code-purple">new</span> {'VisionLeanlet({'}
@@ -787,7 +768,7 @@ export default function Home() {
           <div>
             <strong>Project</strong>
             <a
-              href="https://www.npmjs.com/package/@sukumar09/leanlet"
+              href="https://www.npmjs.com/package/leanlet-ai"
               target="_blank"
               rel="noreferrer"
             >
@@ -800,7 +781,7 @@ export default function Home() {
             >
               <GitFork /> Open source
             </a>
-            <span>Apache-2.0 · v0.1.0</span>
+            <span>Apache-2.0 · v0.2.0</span>
           </div>
         </div>
         <div className="shell footer-bottom">

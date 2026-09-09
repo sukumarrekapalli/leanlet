@@ -11,8 +11,8 @@ export type LeanletModelDefinition = {
   strength: string;
   limitation: string;
   sourceRevision: string;
-  textDtype?: 'q8' | 'fp32';
-  visionDtype?: 'q8' | 'fp32';
+  textDtype?: 'q8' | 'fp16' | 'fp32';
+  visionDtype?: 'q8' | 'fp16' | 'fp32';
 };
 
 export const DEFAULT_PRODUCT_CATEGORIES = [
@@ -34,21 +34,35 @@ export const DEFAULT_PRODUCT_CATEGORIES = [
 ] as const;
 
 export const DEFAULT_CATEGORY_PROMPTS: Record<string, string> = {
-  Electronics: 'a smartphone, mobile phone, laptop, computer, camera, headphones, television, charger, or electronic device',
-  'Fashion & Accessories': 'clothing, shoes, a handbag, sunglasses, or a fashion accessory',
-  'Home & Furniture': 'a chair, table, sofa, bed, lamp, rug, decor, or home furnishing',
-  'Kitchen & Appliances': 'cookware, tableware, a refrigerator, mixer, kettle, or kitchen appliance',
-  'Food & Grocery': 'packaged food, a beverage, fruit, vegetables, snacks, or groceries',
-  'Beauty & Personal Care': 'cosmetics, skincare, shampoo, soap, perfume, grooming, or personal care',
-  'Sports & Outdoors': 'sports equipment, fitness gear, a bicycle, camping, or an outdoor product',
+  Electronics:
+    'a smartphone, mobile phone, laptop, computer, camera, headphones, television, charger, or electronic device',
+  'Fashion & Accessories':
+    'clothing, shoes, a handbag, sunglasses, or a fashion accessory',
+  'Home & Furniture':
+    'a chair, table, sofa, bed, lamp, rug, decor, or home furnishing',
+  'Kitchen & Appliances':
+    'cookware, tableware, a refrigerator, mixer, kettle, or kitchen appliance',
+  'Food & Grocery':
+    'packaged food, a beverage, fruit, vegetables, snacks, or groceries',
+  'Beauty & Personal Care':
+    'cosmetics, skincare, shampoo, soap, perfume, grooming, or personal care',
+  'Sports & Outdoors':
+    'sports equipment, fitness gear, a bicycle, camping, or an outdoor product',
   Automotive: 'a car, motorcycle, tire, vehicle part, or automotive accessory',
-  'Books & Office': 'a book, notebook, pen, stationery, printer, or office supply',
-  'Tools & Hardware': 'a power tool, hand tool, fastener, building tool, or hardware item',
-  'Toys & Kids': 'a toy, game, doll, baby product, stroller, or children’s item',
-  'Jewelry & Watches': 'jewelry, a ring, necklace, bracelet, earrings, or a watch',
-  'Health & Medical': 'medicine, a health product, medical device, bandage, or healthcare equipment',
-  'Industrial & Construction': 'industrial machinery, construction material, safety equipment, or commercial supply',
-  'Other product': 'a miscellaneous retail product that does not fit the other product groups',
+  'Books & Office':
+    'a book, notebook, pen, stationery, printer, or office supply',
+  'Tools & Hardware':
+    'a power tool, hand tool, fastener, building tool, or hardware item',
+  'Toys & Kids':
+    'a toy, game, doll, baby product, stroller, or children’s item',
+  'Jewelry & Watches':
+    'jewelry, a ring, necklace, bracelet, earrings, or a watch',
+  'Health & Medical':
+    'medicine, a health product, medical device, bandage, or healthcare equipment',
+  'Industrial & Construction':
+    'industrial machinery, construction material, safety equipment, or commercial supply',
+  'Other product':
+    'a miscellaneous retail product that does not fit the other product groups',
 };
 
 export const LEANLET_MODELS: Record<LeanletModelId, LeanletModelDefinition> = {
@@ -60,7 +74,7 @@ export const LEANLET_MODELS: Record<LeanletModelId, LeanletModelDefinition> = {
     task: 'zero-shot-image-classification',
     sizeMB: 89,
     tier: 'Recommended',
-    strength: 'Best product accuracy with exact, app-defined categories.',
+    strength: 'Custom categories with the full-precision vision encoder.',
     limitation: 'Larger first download; uses a full-precision vision encoder.',
     sourceRevision: '757d59c9c6870a76a4b0306f05f5061bca15c39f',
     textDtype: 'q8',
@@ -75,10 +89,26 @@ export const LEANLET_MODELS: Record<LeanletModelId, LeanletModelDefinition> = {
     sizeMB: 55,
     tier: 'Balanced',
     strength: 'Custom categories with a smaller download and memory profile.',
-    limitation: 'Quantized vision can reduce accuracy on difficult product images.',
+    limitation:
+      'Quantized vision can reduce accuracy on difficult product images.',
     sourceRevision: '757d59c9c6870a76a4b0306f05f5061bca15c39f',
     textDtype: 'q8',
     visionDtype: 'q8',
+  },
+  'mobileclip-s0-fp16': {
+    id: 'mobileclip-s0-fp16',
+    name: 'MobileCLIP-S0 · FP16 vision',
+    shortName: 'MobileCLIP-S0 FP16',
+    model: 'Xenova/mobileclip_s0',
+    task: 'zero-shot-image-classification',
+    sizeMB: 66,
+    tier: 'Balanced',
+    strength: 'Custom categories with a middle-sized vision encoder.',
+    limitation:
+      'Browser support and accuracy should be checked on target devices.',
+    sourceRevision: '757d59c9c6870a76a4b0306f05f5061bca15c39f',
+    textDtype: 'q8',
+    visionDtype: 'fp16',
   },
   'mobilenet-v4-small': {
     id: 'mobilenet-v4-small',
@@ -89,8 +119,23 @@ export const LEANLET_MODELS: Record<LeanletModelId, LeanletModelDefinition> = {
     sizeMB: 3.9,
     tier: 'Ultra-light',
     strength: 'Very fast and tiny for known ImageNet objects.',
-    limitation: 'Fixed vocabulary; not reliable for arbitrary retail categories.',
+    limitation:
+      'Fixed vocabulary; not reliable for arbitrary retail categories.',
     sourceRevision: '3ba07f12712fa58fd6b3d661f9909c9e332c5005',
+  },
+  'mobilenet-v4-medium': {
+    id: 'mobilenet-v4-medium',
+    name: 'MobileNetV4 Medium · INT8',
+    shortName: 'MobileNetV4 Medium',
+    model: 'onnx-community/mobilenetv4_conv_medium.e500_r224_in1k',
+    task: 'image-classification',
+    sizeMB: 10,
+    tier: 'Balanced',
+    strength:
+      'A larger fixed-vocabulary option when Small misses known objects.',
+    limitation:
+      'Fixed ImageNet vocabulary; it cannot follow custom category text.',
+    sourceRevision: 'dc8d9ef543f3c84172e9ec8c4ce50c7edab85224',
   },
 };
 

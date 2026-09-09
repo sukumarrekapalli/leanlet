@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedFor": "@sukumar09/leanlet@0.1.0",
+  "generatedFor": "leanlet-ai@0.2.0",
   "profiles": {
     "mobileclip-s0": {
       "repository": "Xenova/mobileclip_s0",
@@ -18,11 +18,26 @@
         "onnx/vision_model_quantized.onnx": "sha256:fcbd153d1aa1314fb72ea39b20c37e0572e7e7b05359b51f3efee5d682658472"
       }
     },
+    "mobileclip-s0-fp16": {
+      "repository": "Xenova/mobileclip_s0",
+      "revision": "757d59c9c6870a76a4b0306f05f5061bca15c39f",
+      "files": {
+        "onnx/text_model_quantized.onnx": "sha256:b8557b10e5c23a0126c6d2e6eba48d240484979007917d128953b31618a04211",
+        "onnx/vision_model_fp16.onnx": "sha256:22b1d36ecc6837e8205aee05003440a25e1c1ee0c7e2945dbb9dd597211c59dc"
+      }
+    },
     "mobilenet-v4-small": {
       "repository": "onnx-community/mobilenetv4_conv_small.e2400_r224_in1k",
       "revision": "3ba07f12712fa58fd6b3d661f9909c9e332c5005",
       "files": {
         "onnx/model_quantized.onnx": "sha256:270717121efb0960d60feb712574d55fa27b585f3c4afc14741d81ea980bcd9a"
+      }
+    },
+    "mobilenet-v4-medium": {
+      "repository": "onnx-community/mobilenetv4_conv_medium.e500_r224_in1k",
+      "revision": "dc8d9ef543f3c84172e9ec8c4ce50c7edab85224",
+      "files": {
+        "onnx/model_quantized.onnx": "sha256:baf68809effbdbce4be45b86c5b540b89a88b77d91ce70cd96ec24778bdf7c4c"
       }
     }
   },

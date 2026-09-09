@@ -28,6 +28,10 @@
     "out/**",
     "build/**",
     "dist/**",
+    "packages/leanlet/dist/**",
+    "public/wasm/**",
+    "components/ui/**",
+    "hooks/**",
     "coverage/**",
     "next-env.d.ts"
   ],
@@ -51,6 +55,8 @@
     "typescript/no-namespace": "error",
     "typescript/no-require-imports": "error",
     "typescript/no-unnecessary-type-constraint": "error",
-    "typescript/no-unsafe-function-type": "error"
+    "typescript/no-unsafe-function-type": "error",
+    "jsx-a11y/prefer-tag-over-role": "off",
+    "nextjs/no-html-link-for-pages": "off"
   }
 }

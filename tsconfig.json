@@ -16,7 +16,7 @@
     "incremental": true,
     "paths": {
       "@/*": ["./*"],
-      "@sukumar09/leanlet": ["./packages/leanlet/src/index.ts"]
+      "leanlet-ai": ["./packages/leanlet/src/index.ts"]
     }
   },
   "include": [

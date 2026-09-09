@@ -74,6 +74,7 @@ input:focus-visible {
   width: 30px;
   height: auto;
   flex-shrink: 0;
+  color: #cb3837;
 }
 .npm-available {
   display: inline-flex;
@@ -983,6 +984,61 @@ input:focus-visible {
   color: #25344c;
   font: 12px/1.6 var(--font-sans);
 }
+.micro-input {
+  width: 100%;
+  margin-top: 10px;
+  border: 1px solid #d4dce9;
+  border-radius: 8px;
+  background: #fff;
+  padding: 11px 12px;
+  color: #25344c;
+  font: 11px/1.5 var(--font-sans);
+}
+.micro-list {
+  margin-top: 12px;
+  border-top: 1px solid #dfe5ef;
+}
+.micro-list > div {
+  display: grid;
+  align-items: center;
+  border-bottom: 1px solid #e2e7ef;
+  padding: 10px 2px;
+  grid-template-columns: 28px 1fr;
+}
+.micro-list i {
+  color: #9aa5b5;
+  font: normal 8px/1 var(--font-mono);
+}
+.micro-list strong,
+.micro-list small {
+  display: block;
+}
+.micro-list strong {
+  font-size: 10px;
+}
+.micro-list small {
+  margin-top: 3px;
+  color: #8994a5;
+  font: 8px/1 var(--font-mono);
+}
+.match-target {
+  margin-top: 13px;
+  border-top: 1px solid #dfe5ef;
+  padding-top: 12px;
+}
+.match-target span,
+.match-target strong {
+  display: block;
+}
+.match-target span {
+  color: #7a879a;
+  font: 8px/1 var(--font-mono);
+  text-transform: uppercase;
+}
+.match-target strong {
+  margin-top: 6px;
+  font-size: 10px;
+}
 .micro-result {
   display: grid;
   align-items: center;
@@ -1150,6 +1206,10 @@ input:focus-visible {
 }
 .spark-bars i.alert {
   background: #e84e5b;
+}
+.forecast-bars i.projected {
+  border: 1px dashed #5278c8;
+  background: transparent;
 }
 .case-demo-body input[type='range'] {
   width: 100%;

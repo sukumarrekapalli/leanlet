@@ -1,7 +1,7 @@
 {
-  "name": "@sukumar09/leanlet",
-  "version": "0.1.0",
-  "description": "Ship task-specific AI inside web applications — no inference API required.",
+  "name": "leanlet-ai",
+  "version": "0.2.0",
+  "description": "Run scoped, task-specific inference inside web applications.",
   "type": "module",
   "license": "Apache-2.0",
   "author": "sukumar09",
@@ -19,6 +19,7 @@
     "dist",
     "bin",
     "README.md",
+    "MODEL_LICENSES.md",
     "LICENSE"
   ],
   "bin": {
@@ -40,7 +41,7 @@
     "on-device-ai",
     "webassembly",
     "onnx",
-    "privacy",
+    "local-inference",
     "machine-learning"
   ],
   "dependencies": {

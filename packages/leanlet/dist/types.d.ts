@@ -1,4 +1,4 @@
-export type LeanletModelId = 'mobileclip-s0' | 'mobileclip-s0-compact' | 'mobilenet-v4-small';
+export type LeanletModelId = 'mobileclip-s0' | 'mobileclip-s0-fp16' | 'mobileclip-s0-compact' | 'mobilenet-v4-medium' | 'mobilenet-v4-small';
 export type Prediction = {
     label: string;
     score: number;
