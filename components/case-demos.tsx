@@ -16,6 +16,52 @@ import {
   Sparkles,
   TrendingUp,
 } from 'lucide-react';
+import { LEANLET_MODELS, type LeanletModelId } from 'leanlet-ai';
+
+type ProfileOption = {
+  id: string;
+  name: string;
+  detail: string;
+};
+
+function CaseProfilePicker({
+  id,
+  label,
+  options,
+  value,
+  onChange,
+}: {
+  id: string;
+  label: string;
+  options: ProfileOption[];
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <label className="case-profile-picker" htmlFor={id}>
+      <span>{label}</span>
+      <select
+        id={id}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+      >
+        {options.map((option) => (
+          <option key={option.id} value={option.id}>
+            {option.name} · {option.detail}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
+const visionModelOrder: LeanletModelId[] = [
+  'mobilenet-v4-medium',
+  'mobileclip-s0-fp16',
+  'mobileclip-s0',
+  'mobileclip-s0-compact',
+  'mobilenet-v4-small',
+];
 
 const INTENTS = {
   Shipping: [
@@ -32,6 +78,12 @@ const INTENTS = {
   Product: ['size', 'color', 'stock', 'available', 'spec', 'compatible'],
 } as const;
 
+const intentProfiles: ProfileOption[] = [
+  { id: 'keywords', name: 'Keyword scorer', detail: '< 3 KB' },
+  { id: 'weighted', name: 'Weighted terms', detail: '< 4 KB' },
+  { id: 'conservative', name: 'Conservative route', detail: '< 3 KB' },
+];
+
 function softmax(values: number[]) {
   const max = Math.max(...values);
   const exp = values.map((value) => Math.exp(value - max));
@@ -43,15 +95,22 @@ function IntentDemo() {
   const [text, setText] = useState(
     'Where is my package? It was due yesterday.',
   );
+  const [profile, setProfile] = useState('keywords');
   const predictions = useMemo(() => {
     const input = text.toLowerCase();
     const entries = Object.entries(INTENTS);
+    const tuning =
+      profile === 'weighted'
+        ? { base: 0.1, match: 1.8 }
+        : profile === 'conservative'
+          ? { base: 0.45, match: 1 }
+          : { base: 0.2, match: 1.35 };
     const probabilities = softmax(
       entries.map(
         ([, words]) =>
-          0.2 +
+          tuning.base +
           words.reduce(
-            (sum, word) => sum + (input.includes(word) ? 1.35 : 0),
+            (sum, word) => sum + (input.includes(word) ? tuning.match : 0),
             0,
           ),
       ),
@@ -59,9 +118,16 @@ function IntentDemo() {
     return entries
       .map(([label], index) => ({ label, score: probabilities[index] }))
       .sort((a, b) => b.score - a.score);
-  }, [text]);
+  }, [profile, text]);
   return (
     <div className="case-demo-body">
+      <CaseProfilePicker
+        id="intent-profile"
+        label="Local profile"
+        options={intentProfiles}
+        value={profile}
+        onChange={setProfile}
+      />
       <label className="micro-label" htmlFor="intent-input">
         Customer message
       </label>
@@ -96,19 +162,35 @@ const rankItems = [
   { id: 'quick', name: 'Quick wins', meta: 'Short · actionable' },
 ] as const;
 
+const rankingProfiles: ProfileOption[] = [
+  { id: 'balanced', name: 'Balanced decay', detail: '1 KB' },
+  { id: 'responsive', name: 'Responsive decay', detail: '1 KB' },
+  { id: 'stable', name: 'Stable decay', detail: '1 KB' },
+];
+
 function RankingDemo() {
+  const [profile, setProfile] = useState('balanced');
   const [scores, setScores] = useState<Record<string, number>>({
     focus: 0.51,
     discover: 0.29,
     quick: 0.2,
   });
   const ranked = [...rankItems].sort((a, b) => scores[b.id] - scores[a.id]);
+  const rankingTuning =
+    profile === 'responsive'
+      ? { decay: 0.68, boost: 0.42 }
+      : profile === 'stable'
+        ? { decay: 0.9, boost: 0.16 }
+        : { decay: 0.82, boost: 0.28 };
   const choose = (id: string) =>
     setScores((current) => {
       const next = Object.fromEntries(
-        Object.entries(current).map(([key, value]) => [key, value * 0.82]),
+        Object.entries(current).map(([key, value]) => [
+          key,
+          value * rankingTuning.decay,
+        ]),
       );
-      next[id] = (next[id] ?? 0) + 0.28;
+      next[id] = (next[id] ?? 0) + rankingTuning.boost;
       const total = Object.values(next).reduce((sum, value) => sum + value, 0);
       return Object.fromEntries(
         Object.entries(next).map(([key, value]) => [key, value / total]),
@@ -116,6 +198,13 @@ function RankingDemo() {
     });
   return (
     <div className="case-demo-body">
+      <CaseProfilePicker
+        id="ranking-profile"
+        label="Local profile"
+        options={rankingProfiles}
+        value={profile}
+        onChange={setProfile}
+      />
       <div className="rank-head">
         <span className="micro-label">Your local ranking</span>
         <button
@@ -147,11 +236,30 @@ function RankingDemo() {
 
 function AnomalyDemo() {
   const [value, setValue] = useState(67);
-  const z = Math.abs(value - 42) / 9;
-  const anomaly = z >= 2.25;
+  const [profile, setProfile] = useState('zscore');
+  const anomalyProfiles: ProfileOption[] = [
+    { id: 'zscore', name: 'Z-score', detail: '< 1 KB' },
+    { id: 'robust', name: 'Robust deviation', detail: '< 1 KB' },
+    { id: 'sensitive', name: 'Sensitive threshold', detail: '< 1 KB' },
+  ];
+  const profileConfig =
+    profile === 'robust'
+      ? { scale: 6.5, threshold: 2.8, label: 'robust deviation' }
+      : profile === 'sensitive'
+        ? { scale: 8, threshold: 1.7, label: 'sensitive threshold' }
+        : { scale: 9, threshold: 2.25, label: 'z-score' };
+  const z = Math.abs(value - 42) / profileConfig.scale;
+  const anomaly = z >= profileConfig.threshold;
   const history = [39, 43, 47, 40, 44, 41, 45, 38, 42, 46, 43, value];
   return (
     <div className="case-demo-body">
+      <CaseProfilePicker
+        id="anomaly-profile"
+        label="Local profile"
+        options={anomalyProfiles}
+        value={profile}
+        onChange={setProfile}
+      />
       <div className="sensor-value">
         <span>
           <i className={anomaly ? 'alert' : ''} /> Live sensor
@@ -185,7 +293,10 @@ function AnomalyDemo() {
         <Activity />
         <span>
           <strong>{anomaly ? 'Anomaly detected' : 'Within baseline'}</strong>
-          <small>deviation {z.toFixed(2)}σ · threshold 2.25σ</small>
+          <small>
+            {profileConfig.label} {z.toFixed(2)}σ · threshold{' '}
+            {profileConfig.threshold}σ
+          </small>
         </span>
       </div>
     </div>
@@ -211,6 +322,12 @@ const searchDocuments = [
   },
 ];
 
+const searchProfiles: ProfileOption[] = [
+  { id: 'terms', name: 'Term overlap', detail: '< 3 KB' },
+  { id: 'characters', name: 'Character n-gram', detail: '< 4 KB' },
+  { id: 'prefix', name: 'Prefix matching', detail: '< 2 KB' },
+];
+
 const terms = (value: string) =>
   new Set(value.toLowerCase().match(/[a-z0-9]+/g) ?? []);
 const overlap = (left: string, right: string) => {
@@ -219,24 +336,61 @@ const overlap = (left: string, right: string) => {
   const matches = [...a].filter((term) => b.has(term)).length;
   return matches / Math.max(1, Math.sqrt(a.size * b.size));
 };
+const characterOverlap = (left: string, right: string) => {
+  const grams = (value: string) => {
+    const normalized = `  ${value.toLowerCase().replace(/[^a-z0-9]/g, '')}  `;
+    return new Set(
+      Array.from({ length: Math.max(0, normalized.length - 2) }, (_, index) =>
+        normalized.slice(index, index + 3),
+      ),
+    );
+  };
+  const a = grams(left);
+  const b = grams(right);
+  const matches = [...a].filter((term) => b.has(term)).length;
+  return (2 * matches) / Math.max(1, a.size + b.size);
+};
+const prefixOverlap = (left: string, right: string) => {
+  const queryTerms = [...terms(left)];
+  const documentTerms = [...terms(right)];
+  const matches = queryTerms.filter((query) =>
+    documentTerms.some((document) => document.startsWith(query.slice(0, 4))),
+  ).length;
+  return matches / Math.max(1, queryTerms.length);
+};
 
 function SearchDemo() {
   const [query, setQuery] = useState('How do I add somebody to my workspace?');
+  const [profile, setProfile] = useState('terms');
   const ranked = useMemo(
     () =>
       searchDocuments
         .map((document) => ({
           ...document,
-          score: overlap(
-            query.replace('somebody', 'member').replace('add', 'invite'),
-            document.text,
-          ),
+          score:
+            profile === 'characters'
+              ? characterOverlap(query, document.text)
+              : profile === 'prefix'
+                ? prefixOverlap(query, document.text)
+                : overlap(
+                    query
+                      .replace('somebody', 'member')
+                      .replace('add', 'invite'),
+                    document.text,
+                  ),
         }))
         .sort((a, b) => b.score - a.score),
-    [query],
+    [profile, query],
   );
   return (
     <div className="case-demo-body">
+      <CaseProfilePicker
+        id="search-profile"
+        label="Local profile"
+        options={searchProfiles}
+        value={profile}
+        onChange={setProfile}
+      />
       <label className="micro-label" htmlFor="search-input">
         Documentation query
       </label>
@@ -287,16 +441,32 @@ const scriptLanguages: Array<[string, RegExp]> = [
   ['Thai', /\p{Script=Thai}/u],
 ];
 
+const languageProfiles: ProfileOption[] = [
+  { id: 'script-vocabulary', name: 'Script + vocabulary', detail: '< 2 KB' },
+  { id: 'script', name: 'Writing system', detail: '< 1 KB' },
+  { id: 'vocabulary', name: 'Latin vocabulary', detail: '< 2 KB' },
+];
+
 function hasLanguageSignal(input: string, signal: string) {
   const words: string[] = input.toLocaleLowerCase().match(/\p{L}+/gu) ?? [];
   if (signal.includes(' ')) return input.toLocaleLowerCase().includes(signal);
   return words.includes(signal);
 }
 
-function detectLanguage(text: string) {
-  const scriptMatch = scriptLanguages.find(([, pattern]) => pattern.test(text));
+function detectLanguage(text: string, profile: string) {
+  const scriptMatch =
+    profile === 'vocabulary'
+      ? undefined
+      : scriptLanguages.find(([, pattern]) => pattern.test(text));
   if (scriptMatch)
     return { language: scriptMatch[0], score: 1, evidence: 'writing system' };
+
+  if (profile === 'script')
+    return {
+      language: 'Unknown',
+      score: 0,
+      evidence: 'no writing-system match',
+    };
 
   const ranked = Object.entries(languageSignals)
     .map(([language, signals]) => ({
@@ -316,9 +486,17 @@ function detectLanguage(text: string) {
 
 function LanguageDemo() {
   const [text, setText] = useState('¿Dónde está mi pedido?');
-  const result = useMemo(() => detectLanguage(text), [text]);
+  const [profile, setProfile] = useState('script-vocabulary');
+  const result = useMemo(() => detectLanguage(text, profile), [profile, text]);
   return (
     <div className="case-demo-body">
+      <CaseProfilePicker
+        id="language-profile"
+        label="Local profile"
+        options={languageProfiles}
+        value={profile}
+        onChange={setProfile}
+      />
       <label className="micro-label" htmlFor="language-input">
         Short message
       </label>
@@ -334,9 +512,8 @@ function LanguageDemo() {
         <b>{result.evidence}</b>
       </div>
       <p className="micro-foot">
-        This baseline identifies writing systems first, then checks a small
-        Latin-language vocabulary. Use a language-ID model when languages share
-        scripts or coverage must be broader.
+        These are inspectable local profiles. Use a dedicated language-ID model
+        when languages share scripts or coverage must be broader.
       </p>
     </div>
   );
@@ -344,6 +521,12 @@ function LanguageDemo() {
 
 function ForecastDemo() {
   const [latest, setLatest] = useState(34);
+  const [profile, setProfile] = useState('linear');
+  const forecastProfiles: ProfileOption[] = [
+    { id: 'linear', name: 'Linear trend', detail: '< 1 KB' },
+    { id: 'average', name: 'Moving average', detail: '< 1 KB' },
+    { id: 'damped', name: 'Damped trend', detail: '< 1 KB' },
+  ];
   const values = [19, 21, 22, 25, 27, 30, latest];
   const count = values.length;
   const sumX = values.reduce((sum, _, index) => sum + index, 0);
@@ -352,9 +535,25 @@ function ForecastDemo() {
   const sumXX = values.reduce((sum, _, index) => sum + index * index, 0);
   const slope = (count * sumXY - sumX * sumY) / (count * sumXX - sumX * sumX);
   const intercept = (sumY - slope * sumX) / count;
-  const next = Math.round(intercept + slope * count);
+  const linearNext = intercept + slope * count;
+  const movingAverage =
+    values.slice(-3).reduce((sum, value) => sum + value, 0) / 3;
+  const next = Math.round(
+    profile === 'average'
+      ? movingAverage
+      : profile === 'damped'
+        ? values.at(-1)! + slope * 0.55
+        : linearNext,
+  );
   return (
     <div className="case-demo-body">
+      <CaseProfilePicker
+        id="forecast-profile"
+        label="Local profile"
+        options={forecastProfiles}
+        value={profile}
+        onChange={setProfile}
+      />
       <div className="sensor-value">
         <span>Seven local samples</span>
         <strong>
@@ -406,14 +605,33 @@ const similarity = (left: string, right: string) => {
   return (2 * common) / Math.max(1, a.size + b.size);
 };
 
+const matchingProfiles: ProfileOption[] = [
+  { id: 'trigram', name: 'Character trigrams', detail: '< 2 KB' },
+  { id: 'tokens', name: 'Token overlap', detail: '< 2 KB' },
+  { id: 'strict', name: 'Normalized key', detail: '< 1 KB' },
+];
+
 function MatchingDemo() {
   const [candidate, setCandidate] = useState(
     'Acme Wireless Headphones - Black',
   );
+  const [profile, setProfile] = useState('trigram');
   const canonical = 'ACME wireless headphone black';
-  const score = similarity(candidate, canonical);
+  const score =
+    profile === 'tokens'
+      ? overlap(candidate, canonical)
+      : profile === 'strict'
+        ? Number(normalized(candidate) === normalized(canonical))
+        : similarity(candidate, canonical);
   return (
     <div className="case-demo-body">
+      <CaseProfilePicker
+        id="matching-profile"
+        label="Local profile"
+        options={matchingProfiles}
+        value={profile}
+        onChange={setProfile}
+      />
       <label className="micro-label" htmlFor="match-input">
         Incoming record
       </label>
@@ -440,7 +658,14 @@ function MatchingDemo() {
   );
 }
 
-export function CasesSection() {
+export function CasesSection({
+  visionModel,
+  onVisionModelChange,
+}: {
+  visionModel: LeanletModelId;
+  onVisionModelChange: (model: LeanletModelId) => void;
+}) {
+  const selectedVisionModel = LEANLET_MODELS[visionModel];
   return (
     <section id="cases" className="cases-section">
       <div className="shell py-20 lg:py-28">
@@ -450,9 +675,9 @@ export function CasesSection() {
             <h2>Small runtimes for bounded tasks.</h2>
           </div>
           <p>
-            These examples show different browser-side techniques. Each has a
-            narrow input, an explicit output contract, and a fallback that an
-            application can own.
+            Switch an execution profile within every card. Vision uses the
+            shipped model registry; the remaining examples expose the local
+            algorithm being evaluated, with a narrow input and explicit output.
           </p>
         </div>
         <div className="cases-grid">
@@ -461,7 +686,9 @@ export function CasesSection() {
               <span>
                 <Eye /> Vision
               </span>
-              <b>89 MB · zero-shot</b>
+              <b>
+                {selectedVisionModel.sizeMB} MB · {selectedVisionModel.tier}
+              </b>
             </header>
             <div className="vision-graphic">
               <span />
@@ -480,6 +707,19 @@ export function CasesSection() {
                 MobileCLIP compares pixels with your labels in a dedicated
                 worker.
               </p>
+              <CaseProfilePicker
+                id="vision-profile"
+                label="Vision model"
+                options={visionModelOrder.map((id) => ({
+                  id,
+                  name: LEANLET_MODELS[id].shortName,
+                  detail: `${LEANLET_MODELS[id].sizeMB} MB`,
+                }))}
+                value={visionModel}
+                onChange={(model) =>
+                  onVisionModelChange(model as LeanletModelId)
+                }
+              />
               <a href="#demo">
                 Open vision demo <ArrowRight />
               </a>

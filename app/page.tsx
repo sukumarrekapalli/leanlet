@@ -669,7 +669,10 @@ export default function Home() {
         </div>
       </section>
 
-      <CasesSection />
+      <CasesSection
+        visionModel={selectedModel}
+        onVisionModelChange={chooseModel}
+      />
 
       <section
         id="models"

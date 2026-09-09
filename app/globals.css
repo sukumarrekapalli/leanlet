@@ -1217,6 +1217,34 @@ input:focus-visible {
   background: #f6f8fc;
   padding: 17px;
 }
+.case-profile-picker {
+  display: grid;
+  gap: 7px;
+  margin-bottom: 14px;
+}
+.case-profile-picker > span {
+  color: #7a879a;
+  font: 600 8px/1 var(--font-mono);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.case-profile-picker select {
+  width: 100%;
+  appearance: auto;
+  border: 1px solid #cdd8e9;
+  border-radius: 7px;
+  background: #fff;
+  padding: 9px 10px;
+  color: #283650;
+  font: 600 10px/1.3 var(--font-sans);
+}
+.case-profile-picker select:focus-visible {
+  outline: 2px solid #8cafff;
+  outline-offset: 2px;
+}
+.case-copy .case-profile-picker {
+  margin-top: 18px;
+}
 .case-demo-body textarea {
   width: 100%;
   margin-top: 10px;
