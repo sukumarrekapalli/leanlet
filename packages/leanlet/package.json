@@ -1,0 +1,52 @@
+{
+  "name": "@sukumar09/leanlet",
+  "version": "0.1.0",
+  "description": "Ship task-specific AI inside web applications — no inference API required.",
+  "type": "module",
+  "license": "Apache-2.0",
+  "author": "sukumar09",
+  "homepage": "https://sukumarrekapalli.github.io/leanlet/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sukumarrekapalli/leanlet.git",
+    "directory": "packages/leanlet"
+  },
+  "bugs": {
+    "url": "https://github.com/sukumarrekapalli/leanlet/issues"
+  },
+  "sideEffects": false,
+  "files": [
+    "dist",
+    "bin",
+    "README.md",
+    "LICENSE"
+  ],
+  "bin": {
+    "leanlet": "./bin/leanlet.mjs"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "browser-ai",
+    "on-device-ai",
+    "webassembly",
+    "onnx",
+    "privacy",
+    "machine-learning"
+  ],
+  "dependencies": {
+    "@huggingface/transformers": "^3.8.1"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

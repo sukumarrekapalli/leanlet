@@ -15,7 +15,8 @@
     "jsx": "react-jsx",
     "incremental": true,
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./*"],
+      "@sukumar09/leanlet": ["./packages/leanlet/src/index.ts"]
     }
   },
   "include": [

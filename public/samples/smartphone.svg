@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 720" role="img" aria-labelledby="title desc">
+  <title id="title">Smartphone product sample</title>
+  <desc id="desc">A dark blue smartphone shown from the front and back on a pale studio background.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#f7faff"/><stop offset="1" stop-color="#dfe9ff"/></linearGradient>
+    <linearGradient id="body" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#183b78"/><stop offset="1" stop-color="#071326"/></linearGradient>
+    <linearGradient id="screen" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#2a68ff"/><stop offset=".45" stop-color="#54d8ef"/><stop offset="1" stop-color="#8d65ff"/></linearGradient>
+    <filter id="shadow"><feDropShadow dx="0" dy="28" stdDeviation="24" flood-color="#19366d" flood-opacity=".22"/></filter>
+  </defs>
+  <rect width="960" height="720" rx="36" fill="url(#bg)"/>
+  <ellipse cx="480" cy="631" rx="300" ry="38" fill="#728bb7" opacity=".18"/>
+  <g filter="url(#shadow)">
+    <g transform="translate(190 73) rotate(-7 190 280)">
+      <rect x="0" y="0" width="330" height="565" rx="48" fill="url(#body)"/>
+      <rect x="18" y="18" width="294" height="529" rx="35" fill="#102956"/>
+      <rect x="38" y="38" width="126" height="132" rx="31" fill="#071327" stroke="#406ab4" stroke-width="3"/>
+      <circle cx="79" cy="81" r="27" fill="#020712" stroke="#799be0" stroke-width="5"/><circle cx="125" cy="123" r="27" fill="#020712" stroke="#799be0" stroke-width="5"/>
+      <circle cx="129" cy="77" r="11" fill="#b9d8ff"/><circle cx="79" cy="81" r="10" fill="#244a8e"/><circle cx="125" cy="123" r="10" fill="#244a8e"/>
+      <path d="M139 320c-29-1-53 24-53 57 0 34 24 61 54 61s54-27 54-61c0-33-25-58-55-57Z" fill="#31558d" opacity=".55"/>
+      <path d="M141 317c0-20 13-35 32-40 1 21-11 36-32 40Z" fill="#31558d" opacity=".55"/>
+    </g>
+    <g transform="translate(465 87) rotate(7 160 275)">
+      <rect x="0" y="0" width="320" height="550" rx="48" fill="#050a14"/>
+      <rect x="13" y="13" width="294" height="524" rx="37" fill="url(#screen)"/>
+      <path d="M13 360C98 224 197 203 307 80v457H13Z" fill="#142e68" opacity=".48"/>
+      <path d="M13 462c101-88 184-93 294-227v302H13Z" fill="#6b4ee7" opacity=".45"/>
+      <rect x="114" y="27" width="92" height="23" rx="12" fill="#050a14"/>
+      <circle cx="194" cy="38" r="4" fill="#254a8a"/>
+    </g>
+  </g>
+  <g transform="translate(62 58)"><rect width="196" height="45" rx="22" fill="#fff" opacity=".9"/><circle cx="25" cy="22.5" r="7" fill="#2762ff"/><text x="43" y="28" font-family="system-ui,sans-serif" font-size="16" font-weight="650" fill="#17243b">Sample product</text></g>
+</svg>
