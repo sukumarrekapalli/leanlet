@@ -80,7 +80,7 @@ import { defineLeanlet } from 'leanlet-ai';
 
 const detector = defineLeanlet({
   id: 'language.route',
-  infer: (text: string) => /\\p{Script=Telugu}/u.test(text) ? 'te' : 'en',
+  infer: (text: string) => existingLanguageModel.detect(text),
 });
 
 const route = await detector.run(message);
