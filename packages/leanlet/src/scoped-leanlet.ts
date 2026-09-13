@@ -24,19 +24,27 @@ export function defineLeanlet<Input, Output, Context = undefined>(
   let destroyed = false;
 
   const context = () => {
-    if (destroyed) return Promise.reject(new Error(`Leanlet "${definition.id}" has been destroyed.`));
+    if (destroyed)
+      return Promise.reject(
+        new Error(`Leanlet "${definition.id}" has been destroyed.`),
+      );
     contextPromise ??= Promise.resolve(definition.load?.() as Context);
     return contextPromise;
   };
 
   return {
     id: definition.id,
-    async warmup() { await context(); },
-    async run(input) { return definition.infer(input, await context()); },
+    async warmup() {
+      await context();
+    },
+    async run(input) {
+      return definition.infer(input, await context());
+    },
     async destroy() {
       if (destroyed) return;
       destroyed = true;
-      if (contextPromise && definition.dispose) await definition.dispose(await contextPromise);
+      if (contextPromise && definition.dispose)
+        await definition.dispose(await contextPromise);
       contextPromise = undefined;
     },
   };

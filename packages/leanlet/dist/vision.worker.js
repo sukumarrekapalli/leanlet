@@ -191,6 +191,7 @@ let threads = 1;
 let debug = false;
 let runtimePromise = null;
 let textCache = null;
+const cancelledRequests = new Set();
 function send(message) {
     self.postMessage(message);
 }
@@ -355,6 +356,10 @@ async function classify(image, allowed) {
     return mapImageNet(objects, allowed);
 }
 self.onmessage = async ({ data }) => {
+    if (data.type === 'cancel' && data.requestId) {
+        cancelledRequests.add(data.requestId);
+        return;
+    }
     if (data.type === 'configure') {
         const nextModel = data.model ?? modelId;
         if (nextModel !== modelId)
@@ -399,11 +404,18 @@ self.onmessage = async ({ data }) => {
         const image = await RawImage.fromBlob(data.file);
         const started = performance.now();
         const predictions = await classify(image, allowed);
+        if (cancelledRequests.delete(requestId)) {
+            send({ type: 'cancelled', requestId, modelId });
+            return;
+        }
         const elapsedMs = Math.round(performance.now() - started);
         const ranked = predictions.slice(0, Math.min(5, predictions.length));
         const best = ranked[0] ?? { label: 'Other product', score: 0 };
         const result = {
             category: best.label,
+            score: best.score,
+            // Compatibility alias for 0.2 consumers.
+            // oxlint-disable-next-line typescript/no-deprecated
             confidence: Math.min(best.score, 0.99),
             predictions: ranked,
             elapsedMs,
@@ -412,7 +424,7 @@ self.onmessage = async ({ data }) => {
         log('Classification complete', {
             modelId,
             category: result.category,
-            confidence: result.confidence,
+            score: result.score,
             elapsedMs,
         });
         send({ type: 'result', result, requestId });
@@ -425,6 +437,10 @@ self.onmessage = async ({ data }) => {
         });
     }
     catch (error) {
+        if (cancelledRequests.delete(requestId)) {
+            send({ type: 'cancelled', requestId, modelId });
+            return;
+        }
         logError('Classification failed', error);
         send({
             type: 'error',

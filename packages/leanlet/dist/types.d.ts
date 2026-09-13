@@ -5,6 +5,9 @@ export type Prediction = {
 };
 export type CategoryResult = {
     category: string;
+    /** Relative model score for the supplied candidate set; not a calibrated probability. */
+    score: number;
+    /** @deprecated Use score. This alias remains for 0.2 compatibility. */
     confidence: number;
     predictions: Prediction[];
     elapsedMs: number;
@@ -22,6 +25,10 @@ export type LeanletEvent = {
     result: CategoryResult;
     requestId: string;
 } | {
+    type: 'cancelled';
+    requestId: string;
+    modelId: LeanletModelId;
+} | {
     type: 'error';
     message: string;
     requestId?: string;
@@ -38,5 +45,7 @@ export type VisionLeanletOptions = {
 };
 export type ClassifyOptions = {
     categories?: readonly string[];
+    /** Cancels delivery of this request. Active backend computation may finish before the worker handles cancellation. */
+    signal?: AbortSignal;
 };
 //# sourceMappingURL=types.d.ts.map

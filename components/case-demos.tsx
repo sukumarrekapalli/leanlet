@@ -823,7 +823,7 @@ export function CasesSection({
           <Sparkles />
           <p>
             <strong>Choose the runtime after defining the task.</strong> Leanlet
-            provides a consistent boundary for input, execution, confidence,
+            provides a consistent boundary for input, execution, scores,
             fallback, and lifecycle. Teams still need representative evaluation
             data to decide whether a rule, compact model, or remote service
             meets the feature’s requirements.

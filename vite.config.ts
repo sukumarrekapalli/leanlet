@@ -23,6 +23,9 @@ export default defineConfig({
       input: {
         main: path.join(rootDir, 'index.html'),
         docs: path.join(rootDir, 'docs/index.html'),
+        api: path.join(rootDir, 'docs/api/index.html'),
+        migration: path.join(rootDir, 'docs/migrate/index.html'),
+        studio: path.join(rootDir, 'studio/index.html'),
       },
     },
   },

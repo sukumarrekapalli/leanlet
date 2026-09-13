@@ -50,23 +50,23 @@ const DEFAULT_DEMO_MODEL: LeanletModelId = 'mobilenet-v4-medium';
 const platformFeatures = [
   {
     icon: Layers3,
-    title: 'Model registry',
-    text: 'Choose a supported profile or register your own ONNX model without changing product UI.',
+    title: 'Capability registry',
+    text: 'Register typed models, workers, rules, and statistical methods behind one lifecycle contract.',
   },
   {
     icon: Workflow,
-    title: 'Worker runtime',
-    text: 'Inference stays off the main thread. Lifecycle, progress, errors, and cleanup are handled.',
+    title: 'Explicit flows',
+    text: 'Compose declared dependencies in parallel, preserve evidence, and keep the final decision in application code.',
   },
   {
-    icon: Code2,
-    title: 'Typed contracts',
-    text: 'A small TypeScript API returns ranked labels, confidence, timing, and the model used.',
+    icon: Gauge,
+    title: 'Resource kernel',
+    text: 'Bound concurrency and declared memory, schedule by priority and deadline, and evict idle runtimes.',
   },
   {
-    icon: Box,
-    title: 'Static deployment',
-    text: 'Models and WebAssembly ship as normal assets on a CDN, edge host, or GitHub Pages.',
+    icon: GitFork,
+    title: 'Shared computation',
+    text: 'Coalesce identical in-flight work so multiple interface components can reuse one local computation.',
   },
 ];
 
@@ -97,6 +97,7 @@ function StatusPill({ runtime }: { runtime: RuntimeState }) {
 export default function Home() {
   const inputRef = useRef<HTMLInputElement>(null);
   const leanletRef = useRef<VisionLeanlet | null>(null);
+  const unsubscribeRef = useRef<(() => void) | null>(null);
   const [selectedModel, setSelectedModel] =
     useState<LeanletModelId>(DEFAULT_DEMO_MODEL);
   const [preview, setPreview] = useState<string | null>(null);
@@ -112,27 +113,35 @@ export default function Home() {
   const model = LEANLET_MODELS[selectedModel];
   const estimatedFirstLoadMB = Math.ceil(model.sizeMB + 22);
 
-  useEffect(() => {
+  const createVisionRuntime = useCallback((modelId: LeanletModelId) => {
     const leanlet = new VisionLeanlet({
-      model: DEFAULT_DEMO_MODEL,
+      model: modelId,
       categories: DEFAULT_PRODUCT_CATEGORIES,
     });
-    leanletRef.current = leanlet;
-    const unsubscribe = leanlet.subscribe((event: LeanletEvent) => {
+    unsubscribeRef.current = leanlet.subscribe((event: LeanletEvent) => {
       if (event.type === 'status') {
         setRuntime(event.state);
         setStatus(event.message);
         if (event.progress !== undefined)
           setProgress((current) => Math.max(current, event.progress ?? 0));
       } else if (event.type === 'result') setResult(event.result);
-      else {
+      else if (event.type === 'cancelled') {
+        setRuntime('idle');
+        setStatus('Request cancelled');
+      } else {
         setRuntime('error');
         setStatus(event.message);
       }
     });
+    leanletRef.current = leanlet;
+    return leanlet;
+  }, []);
+
+  useEffect(() => {
     return () => {
-      unsubscribe();
-      leanlet.destroy();
+      unsubscribeRef.current?.();
+      leanletRef.current?.destroy();
+      unsubscribeRef.current = null;
       leanletRef.current = null;
     };
   }, []);
@@ -187,7 +196,8 @@ export default function Home() {
   }, [acceptFile]);
 
   const classify = () => {
-    if (!file || !leanletRef.current) return;
+    if (!file) return;
+    const leanlet = leanletRef.current ?? createVisionRuntime(selectedModel);
     setResult(null);
     setRuntime(runtime === 'idle' ? 'loading' : 'running');
     setStatus(
@@ -195,7 +205,7 @@ export default function Home() {
         ? `Loading ${LEANLET_MODELS[selectedModel].shortName}`
         : 'Classifying inside this browser',
     );
-    void leanletRef.current.classify(file).catch(() => undefined);
+    void leanlet.classify(file).catch(() => undefined);
   };
 
   return (
@@ -210,6 +220,7 @@ export default function Home() {
             aria-label="Primary navigation"
           >
             <a href="#platform">Platform</a>
+            <a href="#studio">SafeShare</a>
             <a href="#cases">Use cases</a>
             <a href="#models">Models</a>
             <a href="./docs/">Docs</a>
@@ -239,18 +250,19 @@ export default function Home() {
               AI
             </div>
             <h1 className="mt-7 max-w-[760px] text-[clamp(3.5rem,7vw,7.2rem)] font-semibold leading-[.91] tracking-[-.07em]">
-              On-device AI,
+              Small capabilities.
               <br />
-              <span className="text-[#2762ff]">built into the web.</span>
+              <span className="text-[#2762ff]">One intelligent system.</span>
             </h1>
             <p className="mt-7 max-w-2xl text-lg leading-8 text-[#536078] sm:text-xl">
-              Leanlet helps product teams run bounded, task-specific inference
-              inside supported browsers. Assets can be cached with the app, and
-              inference does not require a hosted model endpoint.
+              Leanlet coordinates bounded models, rules, and local algorithms
+              inside the browser. Each capability stays narrow; together they
+              create an inspectable application experience without an inference
+              API.
             </p>
             <div className="mt-9 flex flex-col gap-3 sm:flex-row">
-              <a href="#demo" className="primary-button">
-                Try it in your browser <ArrowRight />
+              <a href="./studio/" className="primary-button">
+                Open the end-to-end demo <ArrowRight />
               </a>
               <a href="./docs/" className="secondary-button">
                 <FileText /> Read documentation
@@ -277,7 +289,7 @@ export default function Home() {
                 <LockKeyhole /> Inputs stay local
               </span>
               <span className="hero-proof">
-                <Zap /> WASM + Web Workers
+                <Zap /> Bounded scheduling + workers
               </span>
             </div>
           </div>
@@ -291,7 +303,7 @@ export default function Home() {
                 <i />
                 <i />
               </span>
-              <span>product-classifier.ts</span>
+              <span>safeshare-flow.ts</span>
               <span className="console-live">
                 <i /> local
               </span>
@@ -299,29 +311,135 @@ export default function Home() {
             <pre>
               <code>
                 <span className="code-purple">import</span>{' '}
-                {'{ VisionLeanlet }'} <span className="code-purple">from</span>
+                {'{ createLeanletKernel, defineFlow }'}{' '}
+                <span className="code-purple">from</span>
                 {'\n'}{' '}
                 <span className="code-green">&apos;leanlet-ai&apos;</span>
                 {'\n\n'}
-                <span className="code-blue">const</span> vision ={' '}
-                <span className="code-purple">new</span> {'VisionLeanlet({'}
-                {`\n  `}model:{' '}
-                <span className="code-green">&apos;mobileclip-s0&apos;</span>,
-                {`\n  `}categories: catalog.categories,{`\n`}
+                <span className="code-blue">const</span> kernel =
+                createLeanletKernel({'{'}
+                {`\n  `}budget: {'{'} maxConcurrentRuns: 3 {'}'},{`\n`}
                 {'}'}){`\n\n`}
-                <span className="code-blue">const</span> result ={' '}
-                <span className="code-purple">await</span>
-                {'\n'} vision.classify(product.image){`\n\n`}
-                routeTo(result.category)
+                kernel.register(secretCheck){`\n`}
+                kernel.register(personalData){`\n`}
+                kernel.register(linkCheck){`\n`}
+                kernel.register(redactor){`\n\n`}
+                <span className="code-blue">const</span> decision ={' '}
+                <span className="code-purple">await</span> preflight.run(kernel,
+                text)
               </code>
             </pre>
             <div className="console-result">
               <span>
-                <Check /> Electronics
+                <Check /> Hold · credential detected
               </span>
-              <span>confidence 0.72</span>
-              <span>0 inference requests</span>
+              <span>8 bounded capabilities</span>
+              <span>0 inference API calls</span>
             </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="studio" className="distributed-showcase">
+        <div className="shell distributed-grid">
+          <div className="distributed-copy">
+            <p className="section-kicker">Reference application</p>
+            <h2>See distributed intelligence prevent a real mistake.</h2>
+            <p>
+              SafeShare is a working browser-only content preflight, not a
+              sequence of disconnected widgets. It sends the text you enter
+              through independent secret, personal-data, link, language, tone,
+              and readability capabilities, then creates a sanitized draft
+              under an explicit release policy.
+            </p>
+            <div className="distributed-facts">
+              <span>
+                <b>8</b> registered Leanlets
+              </span>
+              <span>
+                <b>1</b> coordinated flow
+              </span>
+              <span>
+                <b>0</b> inference endpoints
+              </span>
+            </div>
+            <div className="distributed-actions">
+              <a href="./studio/" className="primary-button">
+                Launch SafeShare <ArrowRight />
+              </a>
+              <a href="./docs/#architecture" className="secondary-button">
+                <FileText /> Read the architecture
+              </a>
+            </div>
+            <small>
+              Every displayed signal, redaction, trace, and timing comes from
+              the framework run. The inspectable checks are illustrative, not a
+              complete DLP or security product.
+            </small>
+          </div>
+          <div
+            className="distributed-diagram"
+            aria-label="SafeShare distributed intelligence flow"
+          >
+            <header>
+              <span>SAFESHARE.PREFLIGHT / 1.0.0</span>
+              <b>
+                <i /> browser runtime
+              </b>
+            </header>
+            <div className="diagram-input">
+              <FileText />
+              <span>
+                <strong>Content draft</strong>
+                <small>message · note · generated text</small>
+              </span>
+            </div>
+            <div className="diagram-rail">
+              <i />
+              <i />
+              <i />
+              <i />
+              <i />
+            </div>
+            <div className="diagram-capabilities">
+              <article>
+                <LockKeyhole />
+                <strong>Secrets</strong>
+                <small>pattern</small>
+              </article>
+              <article>
+                <Code2 />
+                <strong>Personal data</strong>
+                <small>detector</small>
+              </article>
+              <article>
+                <Database />
+                <strong>Links</strong>
+                <small>parser</small>
+              </article>
+              <article>
+                <Gauge />
+                <strong>Readability</strong>
+                <small>statistics</small>
+              </article>
+              <article>
+                <Workflow />
+                <strong>Tone</strong>
+                <small>router</small>
+              </article>
+            </div>
+            <div className="diagram-fusion">
+              <GitFork />
+              <span>
+                <strong>Redaction + release policy</strong>
+                <small>pass, review, or hold</small>
+              </span>
+              <ChevronRight />
+            </div>
+            <footer>
+              <ShieldCheck /> Every branch shares one lifecycle, budget, and
+              event stream.
+            </footer>
           </div>
         </div>
       </section>
@@ -446,8 +564,8 @@ export default function Home() {
                       <p className="demo-label">Best matching category</p>
                       <h3>{result.category}</h3>
                       <div className="confidence-row">
-                        <span>Model confidence</span>
-                        <strong>{Math.round(result.confidence * 100)}%</strong>
+                        <span>Relative model score</span>
+                        <strong>{Math.round(result.score * 100)}%</strong>
                       </div>
                       <div className="prediction-list">
                         {result.predictions.slice(0, 4).map((prediction) => (
@@ -550,12 +668,13 @@ export default function Home() {
           <div className="section-heading">
             <div>
               <p className="section-kicker">The framework</p>
-              <h2>A defined boundary for browser inference.</h2>
+              <h2>One boundary for many local capabilities.</h2>
             </div>
             <p>
-              Leanlet separates application code from model infrastructure, so
-              teams can evaluate, replace, and govern embedded models without
-              rebuilding the experience around them.
+              Leanlet separates application decisions from capability runtimes,
+              so teams can evaluate, replace, compose, and govern local
+              intelligence without turning the product into one opaque model
+              call.
             </p>
           </div>
           <div className="feature-grid">
@@ -686,7 +805,7 @@ export default function Home() {
             </div>
             <p>
               Leanlet makes the cost visible. Load only the chosen profile and
-              set a confidence threshold backed by your own evaluation data.
+              set an acceptance threshold backed by your own evaluation data.
             </p>
           </div>
           <div
@@ -743,15 +862,15 @@ export default function Home() {
               A small API your application can own.
             </h2>
             <p className="mt-6 text-lg leading-8 text-[#5d6980]">
-              The npm package supplies model selection, worker isolation,
-              lifecycle events, ranked results, and explicit cleanup. Your app
-              supplies its categories, assets, thresholds, and fallback.
+              The npm package supplies typed capabilities, shared resource
+              policy, scheduling, flows, evaluation helpers, and a browser
+              vision adapter. Your app supplies the decision and fallback.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <a href="./docs/#installation" className="primary-button">
                 Installation guide <ArrowRight />
               </a>
-              <a href="./docs/#api" className="secondary-button">
+              <a href="./docs/#kernel" className="secondary-button">
                 API reference
               </a>
             </div>
@@ -760,27 +879,25 @@ export default function Home() {
             <div className="install-command">
               <span>$</span>
               <code>npm install leanlet-ai</code>
-              <span>v0.2.0</span>
+              <span>v0.3.0-beta.1</span>
             </div>
             <pre>
               <code>
                 <span className="code-purple">import</span>{' '}
-                {'{ VisionLeanlet }'} <span className="code-purple">from</span>{' '}
+                {'{ createLeanletKernel }'}{' '}
+                <span className="code-purple">from</span>{' '}
                 <span className="code-green">&apos;leanlet-ai&apos;</span>
                 {'\n\n'}
-                <span className="code-blue">const</span> classifier ={' '}
-                <span className="code-purple">new</span> {'VisionLeanlet({'}
-                {`\n  `}model:{' '}
-                <span className="code-green">&apos;mobileclip-s0&apos;</span>,
-                {`\n  `}categories: [
-                <span className="code-green">&apos;Electronics&apos;</span>,{' '}
-                <span className="code-green">&apos;Clothing&apos;</span>,{' '}
-                <span className="code-green">&apos;Home&apos;</span>],{`\n`}
+                <span className="code-blue">const</span> kernel =
+                createLeanletKernel({'{'}
+                {`\n  `}budget: {'{'} maxConcurrentRuns: 2 {'}'},{`\n`}
                 {'}'}){`\n\n`}
+                kernel.register(category){`\n`}
+                kernel.register(language){`\n`}
+                kernel.register(policy){`\n\n`}
                 <span className="code-blue">const</span> result ={' '}
-                <span className="code-purple">await</span>{' '}
-                classifier.classify(file){`\n`}console.log(result.category,
-                result.confidence)
+                <span className="code-purple">await</span> flow.run(kernel,
+                input)
               </code>
             </pre>
           </div>
@@ -815,7 +932,7 @@ export default function Home() {
               [
                 '03',
                 'Design the fallback',
-                'Confidence is not certainty. Keep deterministic behavior for unsupported and uncertain cases.',
+                'A model score is not certainty. Keep deterministic behavior for unsupported and uncertain cases.',
               ],
               [
                 '04',
@@ -866,7 +983,7 @@ export default function Home() {
             <strong>Framework</strong>
             <a href="#platform">Platform</a>
             <a href="#models">Models</a>
-            <a href="./docs/#api">API</a>
+            <a href="./docs/#kernel">API</a>
           </div>
           <div>
             <strong>Resources</strong>
@@ -890,7 +1007,7 @@ export default function Home() {
             >
               <GitFork /> Open source
             </a>
-            <span>Apache-2.0 · v0.2.0</span>
+            <span>Apache-2.0 · v0.3.0-beta.1</span>
           </div>
         </div>
         <div className="shell footer-bottom">

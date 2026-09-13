@@ -31,7 +31,7 @@ type MobileClipRuntime = {
 type ImageNetRuntime = { kind: 'imagenet'; classifier: ImageNetPipeline };
 type Runtime = MobileClipRuntime | ImageNetRuntime;
 type WorkerRequest = {
-  type: 'configure' | 'warmup' | 'classify';
+  type: 'configure' | 'warmup' | 'classify' | 'cancel';
   assetBase?: string;
   model?: LeanletModelId;
   categories?: readonly string[];
@@ -232,6 +232,7 @@ let threads = 1;
 let debug = false;
 let runtimePromise: Promise<Runtime> | null = null;
 let textCache: { key: string; embeddings: number[][] } | null = null;
+const cancelledRequests = new Set<string>();
 
 function send(message: unknown) {
   self.postMessage(message);
@@ -425,6 +426,10 @@ async function classify(image: RawImage, allowed: readonly string[]) {
 }
 
 self.onmessage = async ({ data }: MessageEvent<WorkerRequest>) => {
+  if (data.type === 'cancel' && data.requestId) {
+    cancelledRequests.add(data.requestId);
+    return;
+  }
   if (data.type === 'configure') {
     const nextModel = data.model ?? modelId;
     if (nextModel !== modelId) await resetPipeline();
@@ -468,11 +473,18 @@ self.onmessage = async ({ data }: MessageEvent<WorkerRequest>) => {
     const image = await RawImage.fromBlob(data.file);
     const started = performance.now();
     const predictions = await classify(image, allowed);
+    if (cancelledRequests.delete(requestId)) {
+      send({ type: 'cancelled', requestId, modelId });
+      return;
+    }
     const elapsedMs = Math.round(performance.now() - started);
     const ranked = predictions.slice(0, Math.min(5, predictions.length));
     const best = ranked[0] ?? { label: 'Other product', score: 0 };
     const result: CategoryResult = {
       category: best.label,
+      score: best.score,
+      // Compatibility alias for 0.2 consumers.
+      // oxlint-disable-next-line typescript/no-deprecated
       confidence: Math.min(best.score, 0.99),
       predictions: ranked,
       elapsedMs,
@@ -481,7 +493,7 @@ self.onmessage = async ({ data }: MessageEvent<WorkerRequest>) => {
     log('Classification complete', {
       modelId,
       category: result.category,
-      confidence: result.confidence,
+      score: result.score,
       elapsedMs,
     });
     send({ type: 'result', result, requestId });
@@ -493,6 +505,10 @@ self.onmessage = async ({ data }: MessageEvent<WorkerRequest>) => {
       modelId,
     });
   } catch (error) {
+    if (cancelledRequests.delete(requestId)) {
+      send({ type: 'cancelled', requestId, modelId });
+      return;
+    }
     logError('Classification failed', error);
     send({
       type: 'error',

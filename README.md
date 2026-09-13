@@ -1,17 +1,18 @@
 # Leanlet
 
-[Documentation](https://sukumarrekapalli.github.io/leanlet/docs/) · [Live demos](https://sukumarrekapalli.github.io/leanlet/) · [npm package](https://www.npmjs.com/package/leanlet-ai)
+[Documentation](https://sukumarrekapalli.github.io/leanlet/docs/) · [API reference](https://sukumarrekapalli.github.io/leanlet/docs/api/) · [SafeShare reference app](https://sukumarrekapalli.github.io/leanlet/studio/) · [Live demos](https://sukumarrekapalli.github.io/leanlet/) · [npm package](https://www.npmjs.com/package/leanlet-ai)
 
-Leanlet is an open-source library for bounded, task-specific intelligence in
-web applications. Its `VisionLeanlet` runtime deploys models, a module worker,
-and runtime assets with the application; image inference runs in the browser
-without an inference API. `defineLeanlet` is a generic lifecycle wrapper for an
-implementation supplied by the application.
+Leanlet is an open-source TypeScript framework for coordinating bounded,
+task-specific intelligence inside web applications. A Leanlet can wrap a compact
+model, worker, local index, statistical method, or deterministic rule. The
+kernel schedules them under shared concurrency, deadline, provider, network,
+and declared-memory policies; flows combine their typed evidence into an
+application-owned decision.
 
 The repository contains:
 
 - the `leanlet-ai` TypeScript package in `packages/leanlet`;
-- an interactive framework website and product-classification reference app;
+- an interactive framework website and SafeShare reference application;
 - live examples for vision, routing, ranking, detection, retrieval, language,
   forecasting, and record matching;
 - a complete documentation site under `/docs/`;
@@ -19,22 +20,58 @@ The repository contains:
 
 The framework package is published on npm as `leanlet-ai`.
 
-## Core API
+## Start with one Leanlet
 
 ```ts
-import { VisionLeanlet } from 'leanlet-ai';
+import { defineLeanlet } from 'leanlet-ai';
 
-const classifier = new VisionLeanlet({
-  model: 'mobileclip-s0',
-  categories: ['Electronics', 'Clothing', 'Home & Furniture', 'Other'],
-  assetBase: '/leanlet-assets/',
+const languageRoute = defineLeanlet<string, 'te' | 'en'>({
+  id: 'language.route',
+  infer: (text) => (/\p{Script=Telugu}/u.test(text) ? 'te' : 'en'),
 });
 
-const result = await classifier.classify(file);
-console.log(result.category, result.confidence);
-
-classifier.destroy();
+const route = await languageRoute.run(message);
+await languageRoute.destroy();
 ```
+
+`defineLeanlet` is the minimal load → run → dispose API. It does not require a
+kernel. Add managed execution when several capabilities need shared scheduling,
+policy, lifecycle, provenance, or budgets.
+
+## Managed kernel API
+
+```ts
+import { accepted, createLeanletKernel, defineFlow } from 'leanlet-ai';
+
+const kernel = createLeanletKernel({
+  budget: { maxConcurrentRuns: 2, maxResidentBytes: 128_000_000 },
+  policy: { network: 'deny', allowedProviders: ['javascript'] },
+});
+
+kernel.register({
+  manifest: {
+    id: 'language.route',
+    version: '1.0.0',
+    task: 'language-routing',
+    providers: ['javascript'],
+    network: 'deny',
+  },
+  run(text: string) {
+    return accepted(/\p{Script=Telugu}/u.test(text) ? 'te-IN' : 'en');
+  },
+});
+
+const result = await kernel.run('language.route', input, {
+  deadlineMs: 100,
+  priority: 5,
+});
+```
+
+See [Architecture](docs/ARCHITECTURE.md), [Adapter authoring](docs/ADAPTERS.md),
+[API reference](docs/API.md), [0.3 migration](docs/MIGRATION_0.3.md),
+[0.3 beta release notes](docs/releases/0.3.0-beta.1.md),
+[next-release working plan](docs/NEXT_RELEASE.md), [Performance](docs/PERFORMANCE.md), and the
+[web documentation](https://sukumarrekapalli.github.io/leanlet/docs/).
 
 ### Diagnostics
 
@@ -64,23 +101,22 @@ installs one requested profile at a time, so applications must bundle every
 profile they expose. Model assets are excluded from the npm package so
 applications can control licensing, cache policy, provenance, and delivery.
 
-## Architecture
+## Reference application
 
 ```text
-image input
+content draft
       ↓
-VisionLeanlet contract
+LeanletKernel resource and policy boundary
       ↓
-dedicated module worker
+secrets ─ personal data ─ links ─ language ─ tone ─ readability
       ↓
-Transformers.js → ONNX Runtime Web → WebAssembly
-      ↓
-ranked result + confidence + timing
+typed findings → deterministic redaction → release policy
 ```
 
-Remote model loading is disabled in the vision worker. The application supplies
-an explicit asset base. The worker owns model lifecycle and cached category
-embeddings, and it is terminated when the Leanlet instance is destroyed.
+SafeShare runs this complete flow in the browser and exposes its actual runtime
+graph, findings, timings, sanitized draft, and release decision. Its inspectable
+patterns demonstrate composition; they are not a complete DLP or security
+control.
 
 ## Development
 
@@ -122,15 +158,15 @@ Before deploying a Leanlet capability:
 
 - evaluate representative inputs and every target label;
 - define quality and latency gates for supported device classes;
-- implement an explicit low-confidence or unsupported-browser fallback;
+- implement an explicit low-score, abstention, and unsupported-browser fallback;
 - version model files and cache headers deliberately;
 - publish model provenance, license, and intended-use notes;
 - verify the Content Security Policy for module workers and local assets;
 - use cross-origin isolation only when enabling multiple ONNX Runtime threads;
 - test current Chrome, Edge, Firefox, and Safari releases, including mobile.
 
-The live examples demonstrate the integration contract. They are not a
-substitute for application-specific evaluation.
+The reference application demonstrates composition and runtime behavior. It is
+not evidence that its sample models or thresholds fit another production domain.
 
 ## Licensing
 

@@ -1,7 +1,7 @@
 {
   "name": "leanlet-ai",
-  "version": "0.2.1",
-  "description": "Run scoped, task-specific inference inside web applications.",
+  "version": "0.3.0-beta.1",
+  "description": "Coordinate bounded, task-specific intelligence inside web applications.",
   "type": "module",
   "license": "Apache-2.0",
   "author": "sukumar09",
@@ -42,7 +42,9 @@
     "webassembly",
     "onnx",
     "local-inference",
-    "machine-learning"
+    "machine-learning",
+    "ai-orchestration",
+    "edge-ai"
   ],
   "dependencies": {
     "@huggingface/transformers": "^3.8.1"

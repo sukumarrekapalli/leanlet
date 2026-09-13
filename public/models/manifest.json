@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedFor": "leanlet-ai@0.2.0",
+  "generatedFor": "leanlet-ai@0.3.0-beta.1",
   "profiles": {
     "mobileclip-s0": {
       "repository": "Xenova/mobileclip_s0",

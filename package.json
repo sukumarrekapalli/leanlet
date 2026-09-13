@@ -1,6 +1,6 @@
 {
   "name": "@sukumar09/leanlet-site",
-  "version": "0.2.0",
+  "version": "0.3.0-beta.1",
   "private": true,
   "engines": {
     "node": ">=22.13.0"
@@ -10,7 +10,9 @@
     "build": "npm run build:package && vite build",
     "build:package": "tsc -p packages/leanlet/tsconfig.json && tsc -p packages/leanlet/tsconfig.worker.json",
     "check": "npm run build:package && tsc --noEmit",
-    "test": "npm run build:package && node --test tests/*.test.mjs",
+    "test": "npm run build:package && node --experimental-strip-types --test tests/*.test.mjs",
+    "test:coverage": "npm run build:package && node --experimental-strip-types --test --experimental-test-coverage --test-coverage-lines=80 --test-coverage-branches=75 --test-coverage-functions=80 tests/*.test.mjs",
+    "benchmark:kernel": "npm run build:package && node benchmarks/kernel.mjs",
     "pack:core": "npm run build:package && npm pack ./packages/leanlet",
     "preview": "vite preview",
     "lint": "oxlint",

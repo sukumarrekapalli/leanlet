@@ -14,8 +14,12 @@ export function defineLeanlet(definition) {
     };
     return {
         id: definition.id,
-        async warmup() { await context(); },
-        async run(input) { return definition.infer(input, await context()); },
+        async warmup() {
+            await context();
+        },
+        async run(input) {
+            return definition.infer(input, await context());
+        },
         async destroy() {
             if (destroyed)
                 return;

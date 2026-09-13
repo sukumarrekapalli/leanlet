@@ -1,0 +1,1006 @@
+export type LeanletExecutionProvider =
+  | 'javascript'
+  | 'wasm-single'
+  | 'wasm-threaded'
+  | 'webgpu'
+  | 'webnn';
+
+export type LeanletAsset = {
+  path: string;
+  bytes: number;
+  sha256?: string;
+  license?: string;
+  sourceRevision?: string;
+};
+
+export type LeanletManifest = {
+  id: string;
+  version: string;
+  task: string;
+  description?: string;
+  assets?: readonly LeanletAsset[];
+  estimatedResidentBytes?: number;
+  providers: readonly LeanletExecutionProvider[];
+  network?: 'deny' | 'static-assets' | 'application-managed';
+};
+
+export type LeanletTiming = {
+  queuedMs: number;
+  loadMs: number;
+  runMs: number;
+  totalMs: number;
+};
+
+export type LeanletProvenance = {
+  leanletId: string;
+  leanletVersion: string;
+  provider: LeanletExecutionProvider;
+};
+
+export type LeanletResult<Output> =
+  | {
+      status: 'accepted';
+      output: Output;
+      score?: number;
+      calibratedConfidence?: number;
+      timing?: LeanletTiming;
+      provenance?: LeanletProvenance;
+    }
+  | {
+      status: 'abstained';
+      reason:
+        | 'cancelled'
+        | 'deadline-exceeded'
+        | 'budget-exceeded'
+        | 'low-score'
+        | 'unsupported-input'
+        | 'policy-denied';
+      candidates?: unknown[];
+      timing?: LeanletTiming;
+      provenance?: LeanletProvenance;
+    }
+  | {
+      status: 'failed';
+      error: LeanletError;
+      recoverable: boolean;
+      timing?: LeanletTiming;
+      provenance?: LeanletProvenance;
+    };
+
+export type LeanletErrorCode =
+  | 'DUPLICATE_ID'
+  | 'NOT_REGISTERED'
+  | 'DESTROYED'
+  | 'BUDGET_EXCEEDED'
+  | 'LOAD_FAILED'
+  | 'RUN_FAILED'
+  | 'DISPOSE_FAILED'
+  | 'UNSUPPORTED_PROVIDER';
+
+export class LeanletError extends Error {
+  readonly code: LeanletErrorCode;
+  readonly cause?: unknown;
+
+  constructor(code: LeanletErrorCode, message: string, cause?: unknown) {
+    super(message);
+    this.name = 'LeanletError';
+    this.code = code;
+    this.cause = cause;
+  }
+}
+
+export type LeanletRunContext = {
+  readonly requestId: string;
+  readonly signal: AbortSignal;
+  readonly deadline: number;
+  readonly provider: LeanletExecutionProvider;
+  emit(detail: Record<string, unknown>): void;
+};
+
+export type KernelLeanletDefinition<Input, Output, State = undefined> = {
+  manifest: LeanletManifest;
+  load?: (context: LeanletRunContext) => State | Promise<State>;
+  run: (
+    input: Input,
+    state: State,
+    context: LeanletRunContext,
+  ) => LeanletResult<Output> | Promise<LeanletResult<Output>>;
+  dispose?: (state: State) => void | Promise<void>;
+};
+
+export type LeanletKernelBudget = {
+  maxConcurrentRuns: number;
+  maxResidentBytes: number;
+  defaultDeadlineMs: number;
+};
+
+export type LeanletKernelPolicy = {
+  network: 'deny' | 'static-assets' | 'application-managed';
+  allowedProviders: readonly LeanletExecutionProvider[];
+};
+
+export type LeanletKernelOptions = {
+  budget?: Partial<LeanletKernelBudget>;
+  policy?: Partial<LeanletKernelPolicy>;
+  selectProvider?: (
+    manifest: LeanletManifest,
+    allowed: readonly LeanletExecutionProvider[],
+  ) => LeanletExecutionProvider | undefined;
+};
+
+export type LeanletKernelEvent =
+  | {
+      type: 'registered' | 'unregistered' | 'loaded' | 'disposed';
+      leanletId: string;
+      timestamp: number;
+    }
+  | {
+      type:
+        | 'queued'
+        | 'coalesced'
+        | 'started'
+        | 'completed'
+        | 'abstained'
+        | 'failed';
+      leanletId: string;
+      requestId: string;
+      timestamp: number;
+      detail?: Record<string, unknown>;
+    }
+  | {
+      type: 'diagnostic';
+      leanletId: string;
+      requestId: string;
+      timestamp: number;
+      detail: Record<string, unknown>;
+    };
+
+export type LeanletKernelSnapshot = {
+  destroyed: boolean;
+  activeRuns: number;
+  queuedRuns: number;
+  declaredResidentBytes: number;
+  telemetry: {
+    completedRuns: number;
+    coalescedRuns: number;
+    evictions: number;
+  };
+  leanlets: Array<{
+    id: string;
+    version: string;
+    task: string;
+    state: 'unloaded' | 'loading' | 'loaded';
+    activeRuns: number;
+    estimatedResidentBytes: number;
+  }>;
+};
+
+export type KernelRunOptions = {
+  signal?: AbortSignal;
+  deadlineMs?: number;
+  /** Higher values run first. Requests with equal priority use earliest deadline first. */
+  priority?: number;
+  /**
+   * Shares one queued or active computation for the same Leanlet and key.
+   * A coalesced caller can cancel its own wait without cancelling shared work.
+   */
+  coalesceKey?: string;
+};
+
+type AnyDefinition = KernelLeanletDefinition<unknown, unknown, unknown>;
+type RuntimeSlot = {
+  definition: AnyDefinition;
+  statePromise?: Promise<unknown>;
+  state?: unknown;
+  loaded: boolean;
+  activeRuns: number;
+  lastUsed: number;
+};
+
+type QueuedRun = {
+  leanletId: string;
+  requestId: string;
+  input: unknown;
+  options: KernelRunOptions;
+  queuedAt: number;
+  deadline: number;
+  priority: number;
+  cleanup: () => void;
+  resolve: (result: LeanletResult<unknown>) => void;
+};
+
+const DEFAULT_BUDGET: LeanletKernelBudget = {
+  maxConcurrentRuns: 2,
+  maxResidentBytes: 256 * 1024 * 1024,
+  defaultDeadlineMs: 5_000,
+};
+
+const DEFAULT_POLICY: LeanletKernelPolicy = {
+  network: 'static-assets',
+  allowedProviders: [
+    'javascript',
+    'wasm-single',
+    'wasm-threaded',
+    'webgpu',
+    'webnn',
+  ],
+};
+
+const EXECUTION_PROVIDERS = new Set<LeanletExecutionProvider>([
+  'javascript',
+  'wasm-single',
+  'wasm-threaded',
+  'webgpu',
+  'webnn',
+]);
+const NETWORK_CLASSES = new Set<NonNullable<LeanletManifest['network']>>([
+  'deny',
+  'static-assets',
+  'application-managed',
+]);
+
+function now() {
+  return typeof performance === 'undefined' ? Date.now() : performance.now();
+}
+
+function errorMessage(error: unknown) {
+  return error instanceof Error ? error.message : String(error);
+}
+
+function isNetworkAllowed(
+  requested: LeanletManifest['network'],
+  allowed: LeanletKernelPolicy['network'],
+) {
+  const rank = { deny: 0, 'static-assets': 1, 'application-managed': 2 };
+  return rank[requested ?? 'deny'] <= rank[allowed];
+}
+
+export function accepted<Output>(
+  output: Output,
+  options: { score?: number; calibratedConfidence?: number } = {},
+): LeanletResult<Output> {
+  return { status: 'accepted', output, ...options };
+}
+
+export function abstained(
+  reason: Extract<LeanletResult<never>, { status: 'abstained' }>['reason'],
+  candidates?: unknown[],
+): LeanletResult<never> {
+  return { status: 'abstained', reason, candidates };
+}
+
+export class LeanletKernel {
+  private readonly budget: LeanletKernelBudget;
+  private readonly policy: LeanletKernelPolicy;
+  private readonly selectProvider: NonNullable<
+    LeanletKernelOptions['selectProvider']
+  >;
+  private readonly slots = new Map<string, RuntimeSlot>();
+  private readonly listeners = new Set<(event: LeanletKernelEvent) => void>();
+  private readonly queue: QueuedRun[] = [];
+  private readonly coalesced = new Map<
+    string,
+    Promise<LeanletResult<unknown>>
+  >();
+  private readonly activeControllers = new Map<string, AbortController>();
+  private readonly activeExecutions = new Map<string, Promise<void>>();
+  private lifecycleGate: Promise<void> = Promise.resolve();
+  private activeRuns = 0;
+  private destroyed = false;
+  private completedRuns = 0;
+  private coalescedRuns = 0;
+  private evictions = 0;
+
+  constructor(options: LeanletKernelOptions = {}) {
+    this.budget = { ...DEFAULT_BUDGET, ...options.budget };
+    this.policy = { ...DEFAULT_POLICY, ...options.policy };
+    this.selectProvider =
+      options.selectProvider ??
+      ((manifest, allowed) =>
+        manifest.providers.find((provider) => allowed.includes(provider)));
+
+    if (
+      !Number.isInteger(this.budget.maxConcurrentRuns) ||
+      this.budget.maxConcurrentRuns < 1
+    )
+      throw new RangeError('maxConcurrentRuns must be a positive integer.');
+    if (
+      !Number.isFinite(this.budget.maxResidentBytes) ||
+      this.budget.maxResidentBytes < 0
+    )
+      throw new RangeError('maxResidentBytes must be a finite, non-negative number.');
+    if (
+      !Number.isFinite(this.budget.defaultDeadlineMs) ||
+      this.budget.defaultDeadlineMs < 1
+    )
+      throw new RangeError('defaultDeadlineMs must be a finite, positive number.');
+  }
+
+  register<Input, Output, State>(
+    definition: KernelLeanletDefinition<Input, Output, State>,
+  ) {
+    this.assertActive();
+    this.validateManifest(definition.manifest);
+    const { id } = definition.manifest;
+    if (this.slots.has(id))
+      throw new LeanletError(
+        'DUPLICATE_ID',
+        `A Leanlet with id "${id}" is already registered.`,
+      );
+    this.slots.set(id, {
+      definition: definition as AnyDefinition,
+      loaded: false,
+      activeRuns: 0,
+      lastUsed: 0,
+    });
+    this.emit({ type: 'registered', leanletId: id, timestamp: now() });
+    return this;
+  }
+
+  has(id: string) {
+    return this.slots.has(id);
+  }
+
+  subscribe(listener: (event: LeanletKernelEvent) => void) {
+    this.listeners.add(listener);
+    return () => {
+      this.listeners.delete(listener);
+    };
+  }
+
+  async prewarm(id: string, options: KernelRunOptions = {}) {
+    this.assertActive();
+    this.validateRunOptions(options);
+    const slot = this.getSlot(id);
+    if (
+      !isNetworkAllowed(slot.definition.manifest.network, this.policy.network)
+    )
+      throw new LeanletError(
+        'LOAD_FAILED',
+        `Network policy denied prewarming Leanlet "${id}".`,
+      );
+    if (this.activeRuns >= this.budget.maxConcurrentRuns)
+      throw new LeanletError(
+        'BUDGET_EXCEEDED',
+        `Cannot prewarm Leanlet "${id}" while the concurrency budget is full.`,
+      );
+    const controller = this.createController(options, now());
+    const provider = this.resolveProvider(slot.definition.manifest);
+    const requestId = crypto.randomUUID();
+    slot.activeRuns += 1;
+    this.activeRuns += 1;
+    this.activeControllers.set(requestId, controller.controller);
+    const execution = this.ensureLoaded(
+      slot,
+      this.context(id, requestId, controller, provider),
+    );
+    this.activeExecutions.set(requestId, execution);
+    try {
+      await execution;
+    } finally {
+      slot.activeRuns -= 1;
+      slot.lastUsed = now();
+      this.activeRuns -= 1;
+      this.activeControllers.delete(requestId);
+      this.activeExecutions.delete(requestId);
+      controller.cleanup();
+      this.drain();
+    }
+  }
+
+  run<Input, Output>(
+    leanletId: string,
+    input: Input,
+    options: KernelRunOptions = {},
+  ): Promise<LeanletResult<Output>> {
+    this.assertActive();
+    this.getSlot(leanletId);
+    this.validateRunOptions(options);
+    const priority = options.priority ?? 0;
+    const coalesceId = options.coalesceKey
+      ? `${leanletId}\u0000${options.coalesceKey}`
+      : undefined;
+    const existing = coalesceId ? this.coalesced.get(coalesceId) : undefined;
+    if (existing) {
+      this.coalescedRuns += 1;
+      this.emit({
+        type: 'coalesced',
+        leanletId,
+        requestId: crypto.randomUUID(),
+        timestamp: now(),
+        detail: { coalesceKey: options.coalesceKey },
+      });
+      return this.waitForCaller(
+        existing as Promise<LeanletResult<Output>>,
+        options.signal,
+      );
+    }
+    const requestId = crypto.randomUUID();
+    const queuedAt = now();
+    const sharedOptions = coalesceId
+      ? { ...options, signal: undefined }
+      : options;
+    const execution = new Promise<LeanletResult<Output>>((resolve) => {
+      const deadline =
+        queuedAt + (sharedOptions.deadlineMs ?? this.budget.defaultDeadlineMs);
+      const abort = () => {
+        const index = this.queue.indexOf(queued);
+        if (index < 0) return;
+        this.queue.splice(index, 1);
+        queued.cleanup();
+        this.emit({
+          type: 'abstained',
+          leanletId,
+          requestId,
+          timestamp: now(),
+          detail: { reason: 'cancelled', phase: 'queued' },
+        });
+        this.completedRuns += 1;
+        resolve({ status: 'abstained', reason: 'cancelled' });
+      };
+      const queued: QueuedRun = {
+        leanletId,
+        requestId,
+        input,
+        options: sharedOptions,
+        queuedAt,
+        deadline,
+        priority,
+        cleanup: () =>
+          sharedOptions.signal?.removeEventListener('abort', abort),
+        resolve: resolve as (result: LeanletResult<unknown>) => void,
+      };
+      sharedOptions.signal?.addEventListener('abort', abort, { once: true });
+      this.queue.push(queued);
+      this.queue.sort(
+        (left, right) =>
+          right.priority - left.priority ||
+          left.deadline - right.deadline ||
+          left.queuedAt - right.queuedAt,
+      );
+      this.emit({
+        type: 'queued',
+        leanletId,
+        requestId,
+        timestamp: queuedAt,
+      });
+      this.drain();
+    });
+    if (!coalesceId) return execution;
+    const shared = execution as Promise<LeanletResult<unknown>>;
+    this.coalesced.set(coalesceId, shared);
+    void shared.finally(() => {
+      if (this.coalesced.get(coalesceId) === shared)
+        this.coalesced.delete(coalesceId);
+    });
+    return this.waitForCaller(execution, options.signal);
+  }
+
+  async dispose(id: string) {
+    const slot = this.getSlot(id);
+    await this.withLifecycleLock(async () => {
+      if (slot.activeRuns)
+        throw new LeanletError(
+          'DISPOSE_FAILED',
+          `Cannot dispose Leanlet "${id}" while it is running.`,
+        );
+      await this.disposeSlot(slot);
+    });
+  }
+
+  async unregister(id: string) {
+    const slot = this.getSlot(id);
+    if (this.queue.some((request) => request.leanletId === id))
+      throw new LeanletError(
+        'DISPOSE_FAILED',
+        `Cannot unregister Leanlet "${id}" while requests are queued.`,
+      );
+    await this.dispose(id);
+    this.slots.delete(id);
+    this.emit({ type: 'unregistered', leanletId: id, timestamp: now() });
+    void slot;
+  }
+
+  inspect(): LeanletKernelSnapshot {
+    const leanlets = [...this.slots.values()].map((slot) => ({
+      id: slot.definition.manifest.id,
+      version: slot.definition.manifest.version,
+      task: slot.definition.manifest.task,
+      state: slot.loaded
+        ? ('loaded' as const)
+        : slot.statePromise
+          ? ('loading' as const)
+          : ('unloaded' as const),
+      activeRuns: slot.activeRuns,
+      estimatedResidentBytes:
+        slot.definition.manifest.estimatedResidentBytes ?? 0,
+    }));
+    return {
+      destroyed: this.destroyed,
+      activeRuns: this.activeRuns,
+      queuedRuns: this.queue.length,
+      declaredResidentBytes: leanlets
+        .filter((leanlet) => leanlet.state === 'loaded')
+        .reduce((sum, leanlet) => sum + leanlet.estimatedResidentBytes, 0),
+      telemetry: {
+        completedRuns: this.completedRuns,
+        coalescedRuns: this.coalescedRuns,
+        evictions: this.evictions,
+      },
+      leanlets,
+    };
+  }
+
+  async destroy() {
+    if (this.destroyed) return;
+    this.destroyed = true;
+    for (const request of this.queue.splice(0)) {
+      request.cleanup();
+      const error = new LeanletError(
+        'DESTROYED',
+        'Leanlet kernel was destroyed.',
+      );
+      this.emit({
+        type: 'failed',
+        leanletId: request.leanletId,
+        requestId: request.requestId,
+        timestamp: now(),
+        detail: { code: error.code, phase: 'queued' },
+      });
+      request.resolve({ status: 'failed', recoverable: false, error });
+      this.completedRuns += 1;
+    }
+    for (const controller of this.activeControllers.values())
+      controller.abort(
+        new LeanletError('DESTROYED', 'Leanlet kernel was destroyed.'),
+      );
+    await Promise.allSettled(this.activeExecutions.values());
+    const disposals = await Promise.allSettled(
+      [...this.slots.values()].map((slot) => this.disposeSlot(slot)),
+    );
+    this.slots.clear();
+    this.listeners.clear();
+    const failedDisposal = disposals.find(
+      (result): result is PromiseRejectedResult => result.status === 'rejected',
+    );
+    if (failedDisposal) throw failedDisposal.reason;
+  }
+
+  private drain() {
+    while (
+      !this.destroyed &&
+      this.activeRuns < this.budget.maxConcurrentRuns &&
+      this.queue.length
+    ) {
+      const request = this.queue.shift()!;
+      request.cleanup();
+      if (request.options.signal?.aborted) {
+        this.emit({
+          type: 'abstained',
+          leanletId: request.leanletId,
+          requestId: request.requestId,
+          timestamp: now(),
+          detail: { reason: 'cancelled', phase: 'queued' },
+        });
+        this.completedRuns += 1;
+        request.resolve({ status: 'abstained', reason: 'cancelled' });
+        continue;
+      }
+      if (now() >= request.deadline) {
+        this.emit({
+          type: 'abstained',
+          leanletId: request.leanletId,
+          requestId: request.requestId,
+          timestamp: now(),
+          detail: { reason: 'deadline-exceeded', phase: 'queued' },
+        });
+        this.completedRuns += 1;
+        request.resolve({
+          status: 'abstained',
+          reason: 'deadline-exceeded',
+        });
+        continue;
+      }
+      this.activeRuns += 1;
+      const execution = this.execute(request);
+      this.activeExecutions.set(request.requestId, execution);
+      void execution.finally(() => {
+        this.activeExecutions.delete(request.requestId);
+        this.activeRuns -= 1;
+        this.drain();
+      });
+    }
+  }
+
+  private async execute(request: QueuedRun) {
+    const startedAt = now();
+    const slot = this.getSlot(request.leanletId);
+    const controller = this.createController(request.options, request.queuedAt);
+    this.activeControllers.set(request.requestId, controller.controller);
+    let provenance: LeanletProvenance | undefined;
+    let loadMs = 0;
+    let runStarted = 0;
+    slot.activeRuns += 1;
+    const settle = (result: LeanletResult<unknown>) => {
+      const finishedAt = now();
+      const timing: LeanletTiming = {
+        queuedMs: startedAt - request.queuedAt,
+        loadMs,
+        runMs: runStarted ? finishedAt - runStarted : 0,
+        totalMs: finishedAt - request.queuedAt,
+      };
+      const enriched = {
+        ...result,
+        timing,
+        ...(provenance ? { provenance } : {}),
+      } as LeanletResult<unknown>;
+      this.emit({
+        type:
+          result.status === 'accepted'
+            ? 'completed'
+            : result.status === 'abstained'
+              ? 'abstained'
+              : 'failed',
+        leanletId: request.leanletId,
+        requestId: request.requestId,
+        timestamp: finishedAt,
+        detail: {
+          status: result.status,
+          totalMs: timing.totalMs,
+          ...(result.status === 'abstained' ? { reason: result.reason } : {}),
+        },
+      });
+      request.resolve(enriched);
+      this.completedRuns += 1;
+    };
+    try {
+      const provider = this.resolveProvider(slot.definition.manifest);
+      provenance = {
+        leanletId: request.leanletId,
+        leanletVersion: slot.definition.manifest.version,
+        provider,
+      };
+      const context = this.context(
+        request.leanletId,
+        request.requestId,
+        controller,
+        provider,
+      );
+      this.emit({
+        type: 'started',
+        leanletId: request.leanletId,
+        requestId: request.requestId,
+        timestamp: startedAt,
+        detail: { provider },
+      });
+      if (
+        !isNetworkAllowed(slot.definition.manifest.network, this.policy.network)
+      )
+        return settle({
+          status: 'abstained',
+          reason: 'policy-denied',
+        });
+
+      const loadStarted = now();
+      await this.ensureLoaded(slot, context);
+      loadMs = now() - loadStarted;
+      if (controller.signal.aborted)
+        return settle({
+          status: 'abstained',
+          reason: now() >= context.deadline ? 'deadline-exceeded' : 'cancelled',
+        });
+
+      runStarted = now();
+      const result = await slot.definition.run(
+        request.input,
+        slot.state,
+        context,
+      );
+      settle(result);
+    } catch (error) {
+      if (error instanceof LeanletError && error.code === 'BUDGET_EXCEEDED') {
+        settle({
+          status: 'abstained',
+          reason: 'budget-exceeded',
+        });
+        return;
+      }
+      const wrapped =
+        error instanceof LeanletError
+          ? error
+          : new LeanletError(
+              runStarted ? 'RUN_FAILED' : 'LOAD_FAILED',
+              errorMessage(error),
+              error,
+            );
+      const finishedAt = now();
+      this.emit({
+        type: 'failed',
+        leanletId: request.leanletId,
+        requestId: request.requestId,
+        timestamp: finishedAt,
+        detail: { code: wrapped.code, message: wrapped.message },
+      });
+      request.resolve({
+        status: 'failed',
+        error: wrapped,
+        recoverable: wrapped.code !== 'UNSUPPORTED_PROVIDER',
+        timing: {
+          queuedMs: startedAt - request.queuedAt,
+          loadMs,
+          runMs: runStarted ? finishedAt - runStarted : 0,
+          totalMs: finishedAt - request.queuedAt,
+        },
+        ...(provenance ? { provenance } : {}),
+      });
+      this.completedRuns += 1;
+    } finally {
+      slot.activeRuns -= 1;
+      slot.lastUsed = now();
+      this.activeControllers.delete(request.requestId);
+      controller.cleanup();
+    }
+  }
+
+  private async ensureLoaded(slot: RuntimeSlot, context: LeanletRunContext) {
+    if (slot.statePromise) {
+      await slot.statePromise;
+      return;
+    }
+    let loading: Promise<unknown> | undefined;
+    await this.withLifecycleLock(async () => {
+      if (slot.statePromise) {
+        loading = slot.statePromise;
+        return;
+      }
+      await this.makeRoom(slot);
+      slot.statePromise = Promise.resolve(slot.definition.load?.(context))
+        .then((state) => {
+          slot.state = state;
+          slot.loaded = true;
+          this.emit({
+            type: 'loaded',
+            leanletId: slot.definition.manifest.id,
+            timestamp: now(),
+          });
+          return state;
+        })
+        .catch((error) => {
+          slot.statePromise = undefined;
+          slot.state = undefined;
+          slot.loaded = false;
+          throw error;
+        });
+      loading = slot.statePromise;
+    });
+    if (!loading)
+      throw new LeanletError(
+        'LOAD_FAILED',
+        `Leanlet "${slot.definition.manifest.id}" did not create a load promise.`,
+      );
+    await loading;
+  }
+
+  private async makeRoom(incoming: RuntimeSlot) {
+    const incomingBytes =
+      incoming.definition.manifest.estimatedResidentBytes ?? 0;
+    if (incomingBytes > this.budget.maxResidentBytes)
+      throw new LeanletError(
+        'BUDGET_EXCEEDED',
+        `Leanlet "${incoming.definition.manifest.id}" exceeds the resident-memory budget.`,
+      );
+    let resident = this.currentResidentBytes();
+    const candidates = [...this.slots.values()]
+      .filter(
+        (slot) =>
+          slot !== incoming && slot.statePromise && slot.activeRuns === 0,
+      )
+      .sort((a, b) => a.lastUsed - b.lastUsed);
+    while (
+      resident + incomingBytes > this.budget.maxResidentBytes &&
+      candidates.length
+    ) {
+      const candidate = candidates.shift()!;
+      resident -= candidate.definition.manifest.estimatedResidentBytes ?? 0;
+      await this.disposeSlot(candidate);
+      this.evictions += 1;
+    }
+    if (resident + incomingBytes > this.budget.maxResidentBytes)
+      throw new LeanletError(
+        'BUDGET_EXCEEDED',
+        `Loading "${incoming.definition.manifest.id}" would exceed the resident-memory budget.`,
+      );
+  }
+
+  private currentResidentBytes() {
+    return [...this.slots.values()]
+      .filter((slot) => slot.statePromise)
+      .reduce(
+        (sum, slot) =>
+          sum + (slot.definition.manifest.estimatedResidentBytes ?? 0),
+        0,
+      );
+  }
+
+  private async disposeSlot(slot: RuntimeSlot) {
+    if (!slot.statePromise) return;
+    try {
+      const state = await slot.statePromise;
+      await slot.definition.dispose?.(state);
+    } catch (error) {
+      throw new LeanletError(
+        'DISPOSE_FAILED',
+        `Failed to dispose Leanlet "${slot.definition.manifest.id}": ${errorMessage(error)}`,
+        error,
+      );
+    } finally {
+      slot.statePromise = undefined;
+      slot.state = undefined;
+      slot.loaded = false;
+      slot.lastUsed = 0;
+    }
+    this.emit({
+      type: 'disposed',
+      leanletId: slot.definition.manifest.id,
+      timestamp: now(),
+    });
+  }
+
+  private context(
+    leanletId: string,
+    requestId: string,
+    controller: ReturnType<LeanletKernel['createController']>,
+    provider: LeanletExecutionProvider,
+  ): LeanletRunContext {
+    return {
+      requestId,
+      signal: controller.signal,
+      deadline: controller.deadline,
+      provider,
+      emit: (detail) =>
+        this.emit({
+          type: 'diagnostic',
+          leanletId,
+          requestId,
+          timestamp: now(),
+          detail,
+        }),
+    };
+  }
+
+  private createController(options: KernelRunOptions, startedAt: number) {
+    const controller = new AbortController();
+    const deadline =
+      startedAt + (options.deadlineMs ?? this.budget.defaultDeadlineMs);
+    const abort = () => controller.abort(options.signal?.reason);
+    options.signal?.addEventListener('abort', abort, { once: true });
+    const timeout = setTimeout(
+      () => controller.abort(new Error('Leanlet deadline exceeded.')),
+      Math.max(0, deadline - now()),
+    );
+    return {
+      controller,
+      signal: controller.signal,
+      deadline,
+      cleanup() {
+        clearTimeout(timeout);
+        options.signal?.removeEventListener('abort', abort);
+      },
+    };
+  }
+
+  private resolveProvider(manifest: LeanletManifest) {
+    const provider = this.selectProvider(
+      manifest,
+      this.policy.allowedProviders,
+    );
+    if (!provider || !manifest.providers.includes(provider))
+      throw new LeanletError(
+        'UNSUPPORTED_PROVIDER',
+        `No allowed execution provider is available for Leanlet "${manifest.id}".`,
+      );
+    return provider;
+  }
+
+  private getSlot(id: string) {
+    const slot = this.slots.get(id);
+    if (!slot)
+      throw new LeanletError(
+        'NOT_REGISTERED',
+        `Leanlet "${id}" is not registered.`,
+      );
+    return slot;
+  }
+
+  private assertActive() {
+    if (this.destroyed)
+      throw new LeanletError('DESTROYED', 'Leanlet kernel was destroyed.');
+  }
+
+  private validateManifest(manifest: LeanletManifest) {
+    if (!manifest.id.trim()) throw new TypeError('Leanlet manifest id cannot be empty.');
+    if (!manifest.version.trim())
+      throw new TypeError(`Leanlet "${manifest.id}" version cannot be empty.`);
+    if (!manifest.task.trim())
+      throw new TypeError(`Leanlet "${manifest.id}" task cannot be empty.`);
+    if (!manifest.providers.length)
+      throw new TypeError(`Leanlet "${manifest.id}" must declare at least one provider.`);
+    if (manifest.providers.some((provider) => !EXECUTION_PROVIDERS.has(provider)))
+      throw new TypeError(`Leanlet "${manifest.id}" declares an unknown provider.`);
+    if (manifest.network !== undefined && !NETWORK_CLASSES.has(manifest.network))
+      throw new TypeError(`Leanlet "${manifest.id}" declares an unknown network class.`);
+    if (
+      manifest.estimatedResidentBytes !== undefined &&
+      (!Number.isFinite(manifest.estimatedResidentBytes) ||
+        manifest.estimatedResidentBytes < 0)
+    )
+      throw new RangeError(
+        `Leanlet "${manifest.id}" estimatedResidentBytes must be finite and non-negative.`,
+      );
+    for (const asset of manifest.assets ?? []) {
+      if (!asset.path.trim())
+        throw new TypeError(`Leanlet "${manifest.id}" contains an asset with an empty path.`);
+      if (!Number.isFinite(asset.bytes) || asset.bytes < 0)
+        throw new RangeError(
+          `Leanlet "${manifest.id}" asset "${asset.path}" bytes must be finite and non-negative.`,
+        );
+    }
+  }
+
+  private validateRunOptions(options: KernelRunOptions) {
+    if (options.priority !== undefined && !Number.isFinite(options.priority))
+      throw new RangeError('priority must be a finite number.');
+    if (
+      options.deadlineMs !== undefined &&
+      (!Number.isFinite(options.deadlineMs) || options.deadlineMs < 1)
+    )
+      throw new RangeError('deadlineMs must be a finite, positive number.');
+    if (options.coalesceKey !== undefined && options.coalesceKey.length === 0)
+      throw new TypeError('coalesceKey cannot be empty.');
+  }
+
+  private emit(event: LeanletKernelEvent) {
+    for (const listener of this.listeners) {
+      try {
+        listener(event);
+      } catch {
+        // Observability must never alter scheduling or inference semantics.
+      }
+    }
+  }
+
+  private async withLifecycleLock<Output>(run: () => Promise<Output>) {
+    const previous = this.lifecycleGate;
+    let release!: () => void;
+    this.lifecycleGate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    await previous;
+    try {
+      return await run();
+    } finally {
+      release();
+    }
+  }
+
+  private waitForCaller<Output>(
+    execution: Promise<LeanletResult<Output>>,
+    signal?: AbortSignal,
+  ): Promise<LeanletResult<Output>> {
+    if (!signal) return execution;
+    if (signal.aborted)
+      return Promise.resolve({ status: 'abstained', reason: 'cancelled' });
+    return new Promise((resolve) => {
+      const abort = () => resolve({ status: 'abstained', reason: 'cancelled' });
+      signal.addEventListener('abort', abort, { once: true });
+      void execution.then((result) => {
+        signal.removeEventListener('abort', abort);
+        resolve(result);
+      });
+    });
+  }
+}
+
+export function createLeanletKernel(options: LeanletKernelOptions = {}) {
+  return new LeanletKernel(options);
+}

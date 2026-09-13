@@ -12,6 +12,16 @@
     "rootDir": "src",
     "skipLibCheck": true
   },
-  "include": ["src/index.ts", "src/models.ts", "src/types.ts", "src/scoped-leanlet.ts", "src/vision-leanlet.ts"],
+  "include": [
+    "src/index.ts",
+    "src/core.ts",
+    "src/flow.ts",
+    "src/asset-plan.ts",
+    "src/evaluation.ts",
+    "src/models.ts",
+    "src/types.ts",
+    "src/scoped-leanlet.ts",
+    "src/vision-leanlet.ts"
+  ],
   "exclude": ["src/vision.worker.ts"]
 }

@@ -11,12 +11,14 @@ type Listener = (event: LeanletEvent) => void;
 type PendingRequest = {
   resolve: (result: CategoryResult) => void;
   reject: (error: Error) => void;
+  cleanup: () => void;
 };
 
 export class VisionLeanlet {
   private worker!: Worker;
   private listeners = new Set<Listener>();
   private pending = new Map<string, PendingRequest>();
+  private destroyed = false;
   private options: Required<Omit<VisionLeanletOptions, 'workerUrl'>> & {
     workerUrl?: URL;
   };
@@ -58,10 +60,18 @@ export class VisionLeanlet {
     this.worker.onmessage = ({ data }: MessageEvent<LeanletEvent>) => {
       if (this.options.debug) console.debug('[leanlet:vision]', data);
       if (data.type === 'result') {
-        this.pending.get(data.requestId)?.resolve(data.result);
+        const pending = this.pending.get(data.requestId);
+        pending?.cleanup();
+        pending?.resolve(data.result);
         this.pending.delete(data.requestId);
       } else if (data.type === 'error' && data.requestId) {
-        this.pending.get(data.requestId)?.reject(new Error(data.message));
+        const pending = this.pending.get(data.requestId);
+        pending?.cleanup();
+        pending?.reject(new Error(data.message));
+        this.pending.delete(data.requestId);
+      } else if (data.type === 'cancelled') {
+        const pending = this.pending.get(data.requestId);
+        pending?.cleanup();
         this.pending.delete(data.requestId);
       }
       this.listeners.forEach((listener) => listener(data));
@@ -70,37 +80,69 @@ export class VisionLeanlet {
       const error = new Error(event.message || 'Leanlet worker failed.');
       if (this.options.debug)
         console.error('[leanlet:vision] Worker error', error);
-      this.pending.forEach(({ reject }) => reject(error));
+      this.pending.forEach(({ reject, cleanup }) => {
+        cleanup();
+        reject(error);
+      });
       this.pending.clear();
+      this.listeners.forEach((listener) =>
+        listener({
+          type: 'error',
+          message: error.message,
+          modelId: this.options.model,
+        }),
+      );
     };
     this.worker.postMessage({ type: 'configure', ...this.options });
   }
 
   subscribe(listener: Listener) {
     this.listeners.add(listener);
-    return () => this.listeners.delete(listener);
+    return () => {
+      this.listeners.delete(listener);
+    };
   }
 
   setModel(model: LeanletModelId) {
+    if (this.destroyed) throw new Error('VisionLeanlet was destroyed.');
+    if (!LEANLET_MODELS[model])
+      throw new Error(`Unknown Leanlet model "${model}".`);
     if (model === this.options.model) return;
     this.worker.terminate();
-    this.pending.forEach(({ reject }) =>
-      reject(new Error('Model changed before classification completed.')),
-    );
+    this.pending.forEach(({ reject, cleanup }) => {
+      cleanup();
+      reject(new Error('Model changed before classification completed.'));
+    });
     this.pending.clear();
     this.options.model = model;
     this.createWorker();
   }
 
   warmup() {
+    if (this.destroyed) throw new Error('VisionLeanlet was destroyed.');
     this.worker.postMessage({ type: 'warmup' });
   }
 
   classify(file: Blob, options: ClassifyOptions = {}) {
+    if (this.destroyed)
+      return Promise.reject(new Error('VisionLeanlet was destroyed.'));
+    if (options.signal?.aborted)
+      return Promise.reject(this.abortError(options.signal.reason));
     const requestId = crypto.randomUUID();
-    const request = new Promise<CategoryResult>((resolve, reject) =>
-      this.pending.set(requestId, { resolve, reject }),
-    );
+    let abort = () => undefined;
+    const request = new Promise<CategoryResult>((resolve, reject) => {
+      abort = () => {
+        const pending = this.pending.get(requestId);
+        if (!pending) return;
+        pending.cleanup();
+        this.pending.delete(requestId);
+        this.worker.postMessage({ type: 'cancel', requestId });
+        reject(this.abortError(options.signal?.reason));
+      };
+      const cleanup = () => options.signal?.removeEventListener('abort', abort);
+      this.pending.set(requestId, { resolve, reject, cleanup });
+      options.signal?.addEventListener('abort', abort, { once: true });
+    });
     this.worker.postMessage({
       type: 'classify',
       file,
@@ -111,11 +153,24 @@ export class VisionLeanlet {
   }
 
   destroy() {
+    if (this.destroyed) return;
+    this.destroyed = true;
     this.worker.terminate();
-    this.pending.forEach(({ reject }) =>
-      reject(new Error('Leanlet was destroyed.')),
-    );
+    this.pending.forEach(({ reject, cleanup }) => {
+      cleanup();
+      reject(new Error('Leanlet was destroyed.'));
+    });
     this.pending.clear();
     this.listeners.clear();
+  }
+
+  private abortError(reason?: unknown) {
+    const error = new Error(
+      reason instanceof Error
+        ? reason.message
+        : 'Classification was cancelled.',
+    );
+    error.name = 'AbortError';
+    return error;
   }
 }
