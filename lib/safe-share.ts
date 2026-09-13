@@ -94,11 +94,6 @@ Known limitation: the first analysis downloads static model assets. Please repor
 
 Questions can be sent to team@example.org.`,
   },
-  {
-    id: 'kannada-note',
-    label: 'Kannada note',
-    text: `ಕನ್ನಡ ಭಾಷೆಯು ಕರ್ನಾಟಕದಲ್ಲಿ ಮಾತನಾಡುವ ಪ್ರಮುಖ ದ್ರಾವಿಡ ಭಾಷೆಯಾಗಿದೆ. ಇದು ಸಮೃದ್ಧ ಸಾಹಿತ್ಯ ಮತ್ತು ಸಾಂಸ್ಕೃತಿಕ ಇತಿಹಾಸವನ್ನು ಹೊಂದಿದೆ.`,
-  },
 ] as const;
 
 function hashText(value: string) {
