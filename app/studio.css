@@ -169,6 +169,31 @@
   cursor: pointer;
 }
 .studio-samples button.active { border-color: #9cb4ff; background: #eef3ff; color: #164de2; }
+.studio-model-picker {
+  display: grid;
+  grid-template-columns: minmax(150px, .8fr) minmax(220px, 1.2fr);
+  gap: 14px;
+  align-items: center;
+  margin: 0 0 16px;
+  border: 1px solid #dbe2ec;
+  border-radius: 7px;
+  padding: 12px 14px;
+  background: #f7f9fc;
+}
+.studio-model-picker > span { display: flex; flex-direction: column; gap: 4px; }
+.studio-model-picker strong { color: #26354c; font-size: 11px; }
+.studio-model-picker small { color: #8390a3; font: 500 9px/1.35 var(--font-mono); }
+.studio-model-picker select {
+  min-width: 0;
+  height: 36px;
+  border: 1px solid #cbd5e4;
+  border-radius: 5px;
+  padding: 0 30px 0 10px;
+  background: white;
+  color: #26354c;
+  font-size: 10px;
+  font-weight: 650;
+}
 .studio-textarea-label { display: flex; flex-direction: column; gap: 8px; color: #697991; font-size: 11px; font-weight: 650; }
 .studio-textarea-label textarea {
   min-height: 280px;
@@ -251,6 +276,18 @@
 .studio-findings article > span { border-radius: 999px; padding: 5px 7px; background: #f1f4f8; color: #788599; font: 700 8px/1 var(--font-mono); text-transform: uppercase; }
 .studio-no-findings { display: flex; align-items: center; gap: 8px; border: 1px solid #cce8dc; padding: 13px; background: #f1fbf6; color: #16744f; font-size: 11px; }
 .studio-no-findings svg { width: 16px; }
+.studio-quality-warning {
+  display: flex;
+  gap: 10px;
+  margin: -8px 0 20px;
+  border: 1px solid #ead7a8;
+  padding: 12px;
+  background: #fff9e9;
+  color: #805600;
+}
+.studio-quality-warning > svg { width: 18px; flex: 0 0 auto; }
+.studio-quality-warning strong { font-size: 11px; }
+.studio-quality-warning p { margin: 4px 0 0; color: #8f702e; font-size: 10px; line-height: 1.45; }
 .studio-sanitized { margin-top: 18px; }
 .studio-sanitized pre { max-height: 155px; overflow: auto; margin: 0; border: 1px solid #dce3ec; padding: 14px; background: #071323; color: #c8d5e7; font: 450 10px/1.6 var(--font-mono); white-space: pre-wrap; }
 
@@ -328,6 +365,7 @@
   .studio-result-panel { padding: 20px 16px; }
   .studio-samples { overflow-x: auto; }
   .studio-samples button { flex: 0 0 auto; }
+  .studio-model-picker { grid-template-columns: 1fr; }
   .studio-metrics { grid-template-columns: repeat(2, 1fr); }
   .studio-metrics span:nth-child(2) { border-right: 0; }
   .studio-metrics span:nth-child(-n+2) { border-bottom: 1px solid #e0e6ef; }

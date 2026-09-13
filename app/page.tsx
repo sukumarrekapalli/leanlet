@@ -697,20 +697,24 @@ export default function Home() {
                 <h3>Static assets enter. Inference stays in the browser.</h3>
               </div>
               <p>
-                Leanlet downloads the selected model and ONNX runtime from the
-                application origin. It does not send the input to an inference
-                endpoint.
+                The site delivers only the adapter, runtime, and model assets a
+                capability declares. Inputs cross the Leanlet contract, execute
+                locally, and return typed evidence to application-owned policy.
               </p>
             </div>
             <div className="runtime-map-canvas">
               <article className="origin-node">
                 <Box />
                 <span>Application origin</span>
-                <strong>JavaScript · model · WASM</strong>
-                <small>Network transfer on first use or asset update</small>
+                <strong>Versioned static assets</strong>
+                <small>Adapter · model data · optional WASM runtime</small>
+                <div className="origin-assets" aria-hidden="true">
+                  <i>JS</i><i>MODEL</i><i>WASM</i>
+                </div>
               </article>
               <div className="map-arrow inbound">
                 <span>versioned assets</span>
+                <i className="map-packet" aria-hidden="true" />
                 <ArrowRight />
               </div>
               <div className="browser-boundary">
@@ -720,45 +724,51 @@ export default function Home() {
                   </span>
                   <b>No inference API</b>
                 </header>
+                <div className="browser-control-plane">
+                  <span><ShieldCheck /> Policy admission</span>
+                  <span><Gauge /> Memory + concurrency budget</span>
+                  <span><GitFork /> Coalescing + cancellation</span>
+                  <span><Database /> Lifecycle + eviction</span>
+                </div>
                 <div className="browser-flow">
-                  <article>
+                  <article className="flow-ui">
                     <span>01</span>
                     <strong>Application UI</strong>
                     <small>Image, text, or structured input</small>
                   </article>
-                  <ArrowRight />
-                  <article>
+                  <div className="flow-arrow"><i /><ArrowRight /></div>
+                  <article className="flow-kernel">
                     <span>02</span>
-                    <strong>Leanlet contract</strong>
-                    <small>Typed input, lifecycle, cancellation</small>
+                    <strong>Kernel + contract</strong>
+                    <small>Admit, schedule, reuse, or abstain</small>
                   </article>
-                  <ArrowRight />
-                  <article>
+                  <div className="flow-arrow"><i /><ArrowRight /></div>
+                  <article className="flow-worker">
                     <span>03</span>
                     <strong>Dedicated worker</strong>
-                    <small>Work stays off the UI thread</small>
+                    <small>Isolation keeps model work off the UI thread</small>
                   </article>
-                  <ArrowRight />
-                  <article>
+                  <div className="flow-arrow"><i /><ArrowRight /></div>
+                  <article className="flow-model">
                     <span>04</span>
-                    <strong>ONNX + WASM</strong>
-                    <small>Selected model executes locally</small>
+                    <strong>Scoped model</strong>
+                    <small>Statistical JS, ONNX, WebGPU, or WASM</small>
                   </article>
                 </div>
                 <div className="browser-return">
-                  <div>
+                  <div className="return-result">
                     <Code2 />
                     <span>
                       <strong>Typed result</strong>
-                      <small>Ranked output · score · timing</small>
+                      <small>Output · reliability · timing · provenance</small>
                     </span>
                   </div>
-                  <ArrowRight />
-                  <div>
+                  <div className="return-arrow"><i /><ArrowRight /></div>
+                  <div className="return-policy">
                     <ShieldCheck />
                     <span>
                       <strong>Application decision</strong>
-                      <small>Threshold · fallback · user correction</small>
+                      <small>Accept · warn · abstain · escalate</small>
                     </span>
                   </div>
                   <div className="cache-node">
@@ -783,6 +793,7 @@ export default function Home() {
                 <i className="app-dot" /> Application-owned: acceptance and
                 fallback
               </span>
+              <span className="motion-note">Motion traces asset delivery, inference, and evidence return</span>
             </div>
           </div>
         </div>

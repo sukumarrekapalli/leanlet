@@ -19,3 +19,10 @@ assets and must remain with redistributed weights:
 
 Browser inference uses Transformers.js and ONNX Runtime Web. Their licenses are
 included with their npm packages and remain applicable to redistributed assets.
+
+The language-identification reference adapter uses ELD 2.1.0, an Apache-2.0
+licensed statistical language detector. The website dynamically bundles the
+selected ELD database profile; preserve the package license in distributions:
+
+- https://github.com/nitotm/efficient-language-detector-js
+- https://www.npmjs.com/package/eld

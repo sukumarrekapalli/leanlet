@@ -5,6 +5,14 @@ import {
   type KernelLeanletDefinition,
   type LeanletResult,
 } from 'leanlet-ai';
+import {
+  DEFAULT_LANGUAGE_MODEL,
+  createLanguageDetector,
+  languageModelProfile,
+  type LanguageDetection,
+  type LanguageDetector,
+  type LanguageModelId,
+} from './language-model.ts';
 
 export type FindingKind = 'secret' | 'personal-data' | 'link' | 'language' | 'tone';
 export type FindingSeverity = 'info' | 'review' | 'block';
@@ -29,7 +37,12 @@ export type SafeShareDecision = {
   headline: string;
   explanation: string;
   language: string;
+  languageCode?: string;
   languageScore: number;
+  languageReliable: boolean;
+  languageCandidate?: string;
+  languageWarning?: string;
+  languageModel: LanguageModelId;
   readingMinutes: number;
   readingLevel: string;
   redactedText: string;
@@ -37,11 +50,7 @@ export type SafeShareDecision = {
   counts: { block: number; review: number; info: number };
 };
 
-type LanguageSignal = {
-  language: string;
-  script: string;
-  score: number;
-};
+type LanguageSignal = LanguageDetection;
 
 type ReadabilitySignal = {
   words: number;
@@ -85,6 +94,11 @@ Known limitation: the first analysis downloads static model assets. Please repor
 
 Questions can be sent to team@example.org.`,
   },
+  {
+    id: 'kannada-note',
+    label: 'Kannada note',
+    text: `ಕನ್ನಡ ಭಾಷೆಯು ಕರ್ನಾಟಕದಲ್ಲಿ ಮಾತನಾಡುವ ಪ್ರಮುಖ ದ್ರಾವಿಡ ಭಾಷೆಯಾಗಿದೆ. ಇದು ಸಮೃದ್ಧ ಸಾಹಿತ್ಯ ಮತ್ತು ಸಾಂಸ್ಕೃತಿಕ ಇತಿಹಾಸವನ್ನು ಹೊಂದಿದೆ.`,
+  },
 ] as const;
 
 function hashText(value: string) {
@@ -94,36 +108,6 @@ function hashText(value: string) {
     hash = Math.imul(hash, 16_777_619);
   }
   return (hash >>> 0).toString(36);
-}
-
-function languageOf(text: string): LanguageSignal {
-  const scripts: Array<[RegExp, string, string]> = [
-    [/\p{Script=Telugu}/u, 'Telugu', 'Telugu'],
-    [/\p{Script=Devanagari}/u, 'Hindi / Devanagari', 'Devanagari'],
-    [/\p{Script=Tamil}/u, 'Tamil', 'Tamil'],
-    [/\p{Script=Arabic}/u, 'Arabic', 'Arabic'],
-    [/\p{Script=Cyrillic}/u, 'Cyrillic language', 'Cyrillic'],
-    [/\p{Script=Han}/u, 'Chinese / Han', 'Han'],
-  ];
-  for (const [pattern, language, script] of scripts)
-    if (pattern.test(text)) return { language, script, score: 0.99 };
-
-  const lower = ` ${text.toLocaleLowerCase()} `;
-  const vocabularies: Array<[string, string[]]> = [
-    ['Spanish', [' el ', ' la ', ' para ', ' con ', ' una ', ' por ']],
-    ['French', [' le ', ' la ', ' avec ', ' pour ', ' une ', ' des ']],
-    ['German', [' der ', ' die ', ' mit ', ' für ', ' und ', ' ist ']],
-  ];
-  for (const [language, words] of vocabularies) {
-    const hits = words.filter((word) => lower.includes(word)).length;
-    if (hits >= 2)
-      return {
-        language,
-        script: 'Latin',
-        score: Math.min(0.62 + hits * 0.08, 0.94),
-      };
-  }
-  return { language: 'English / Latin', script: 'Latin', score: 0.64 };
 }
 
 function collectMatches(
@@ -316,7 +300,6 @@ function definition<Input, Output>(
   };
 }
 
-const language = definition('safeshare.language', 'language-routing', 2_048, languageOf);
 const personalData = definition('safeshare.personal-data', 'pii-patterns', 4_096, detectPersonalData);
 const secrets = definition('safeshare.secrets', 'credential-patterns', 4_096, detectSecrets);
 const links = definition('safeshare.links', 'url-risk', 3_072, detectLinks);
@@ -324,15 +307,61 @@ const urgency = definition('safeshare.urgency', 'tone-signal', 2_048, detectUrge
 const readability = definition('safeshare.readability', 'readability-signal', 2_048, readabilityOf);
 const redactor = definition('safeshare.redactor', 'deterministic-redaction', 2_048, redact);
 
+function languageDefinition(
+  modelId: LanguageModelId,
+  detectorFactory: (id: LanguageModelId) => LanguageDetector,
+): KernelLeanletDefinition<string, LanguageSignal, LanguageDetector> {
+  const profile = languageModelProfile(modelId);
+  return {
+    manifest: {
+      id: 'safeshare.language',
+      version: '2.0.0',
+      task: 'language-identification',
+      providers: ['javascript'],
+      assets: [
+        {
+          path: `eld/${modelId.replace('eld-', '')}`,
+          bytes: profile.estimatedTransferBytes,
+          license: 'Apache-2.0',
+        },
+      ],
+      estimatedResidentBytes: profile.estimatedResidentBytes,
+      network: 'static-assets',
+    },
+    load: async () => {
+      const detector = detectorFactory(modelId);
+      await detector.warmup();
+      return detector;
+    },
+    run: async (input, detector, context) =>
+      accepted(await detector.detect(input, context.signal)),
+    dispose: (detector) => detector.destroy(),
+  };
+}
+
 const policy = definition<PolicyInput, SafeShareDecision>(
   'safeshare.policy',
   'release-policy',
   2_048,
   ({ language: detected, readability: reading, findings, redactedText }) => {
+    const policyFindings = detected.reliable
+      ? findings
+      : [
+          ...findings,
+          {
+            id: 'language-low-confidence',
+            kind: 'language' as const,
+            severity: 'review' as const,
+            label: 'Language needs confirmation',
+            detail:
+              detected.warning ??
+              'The selected language model could not make a dependable identification.',
+          },
+        ];
     const counts = {
-      block: findings.filter((finding) => finding.severity === 'block').length,
-      review: findings.filter((finding) => finding.severity === 'review').length,
-      info: findings.filter((finding) => finding.severity === 'info').length,
+      block: policyFindings.filter((finding) => finding.severity === 'block').length,
+      review: policyFindings.filter((finding) => finding.severity === 'review').length,
+      info: policyFindings.filter((finding) => finding.severity === 'info').length,
     };
     const disposition = counts.block ? 'block' : counts.review ? 'review' : 'pass';
     return {
@@ -350,11 +379,16 @@ const policy = definition<PolicyInput, SafeShareDecision>(
             ? 'No credential was found, but one or more contextual checks need a person.'
             : 'The configured local checks found no reason to hold this text.',
       language: detected.language,
+      languageCode: detected.code,
       languageScore: detected.score,
+      languageReliable: detected.reliable,
+      languageCandidate: detected.candidate,
+      languageWarning: detected.warning,
+      languageModel: detected.modelId,
       readingMinutes: reading.readingMinutes,
       readingLevel: reading.readingLevel,
       redactedText,
-      findings: [...findings].sort((left, right) => {
+      findings: [...policyFindings].sort((left, right) => {
         const rank = { block: 0, review: 1, info: 2 };
         return rank[left.severity] - rank[right.severity];
       }),
@@ -369,17 +403,21 @@ function outputOf<Output>(result: LeanletResult<Output>) {
   throw new Error(`Required Leanlet abstained: ${result.reason}`);
 }
 
-export function createSafeShare() {
+export function createSafeShare(
+  modelId: LanguageModelId = DEFAULT_LANGUAGE_MODEL,
+  detectorFactory: (id: LanguageModelId) => LanguageDetector = createLanguageDetector,
+) {
+  const selectedLanguageModel = languageModelProfile(modelId);
   const kernel = createLeanletKernel({
     budget: {
       maxConcurrentRuns: 4,
-      maxResidentBytes: 64 * 1024,
-      defaultDeadlineMs: 2_000,
+      maxResidentBytes: selectedLanguageModel.estimatedResidentBytes + 128 * 1024,
+      defaultDeadlineMs: 15_000,
     },
-    policy: { network: 'deny', allowedProviders: ['javascript'] },
+    policy: { network: 'static-assets', allowedProviders: ['javascript'] },
   });
   kernel
-    .register(language)
+    .register(languageDefinition(modelId, detectorFactory))
     .register(personalData)
     .register(secrets)
     .register(links)

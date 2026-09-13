@@ -1,14 +1,16 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Activity,
+  AlertTriangle,
   ArrowRight,
   BrainCircuit,
   CopyCheck,
   Eye,
   Gauge,
   Languages,
+  LoaderCircle,
   MessageSquareText,
   MousePointerClick,
   RotateCcw,
@@ -17,6 +19,14 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import { LEANLET_MODELS, type LeanletModelId } from 'leanlet-ai';
+import {
+  DEFAULT_LANGUAGE_MODEL,
+  LANGUAGE_MODEL_PROFILES,
+  createLanguageDetector,
+  type LanguageDetection,
+  type LanguageDetector,
+  type LanguageModelId,
+} from '@/lib/language-model';
 
 type ProfileOption = {
   id: string;
@@ -415,79 +425,59 @@ function SearchDemo() {
   );
 }
 
-const languageSignals = {
-  English: ['the', 'is', 'my', 'how', 'where', 'please'],
-  Spanish: ['el', 'la', 'mi', 'cómo', 'dónde', 'por favor'],
-  French: ['le', 'la', 'mon', 'comment', 'où', 'merci'],
-  German: ['der', 'die', 'das', 'mein', 'wie', 'bitte'],
-  Portuguese: ['o', 'a', 'meu', 'como', 'onde', 'obrigado'],
-  Italian: ['il', 'la', 'mio', 'come', 'dove', 'grazie'],
-} as const;
-
-const scriptLanguages: Array<[string, RegExp]> = [
-  ['Telugu', /\p{Script=Telugu}/u],
-  ['Kannada', /\p{Script=Kannada}/u],
-  ['Tamil', /\p{Script=Tamil}/u],
-  ['Malayalam', /\p{Script=Malayalam}/u],
-  ['Bengali', /\p{Script=Bengali}/u],
-  ['Gujarati', /\p{Script=Gujarati}/u],
-  ['Hindi / Devanagari', /\p{Script=Devanagari}/u],
-  ['Punjabi / Gurmukhi', /\p{Script=Gurmukhi}/u],
-  ['Arabic', /\p{Script=Arabic}/u],
-  ['Russian / Cyrillic', /\p{Script=Cyrillic}/u],
-  ['Korean', /\p{Script=Hangul}/u],
-  ['Japanese', /[\p{Script=Hiragana}\p{Script=Katakana}]/u],
-  ['Chinese', /\p{Script=Han}/u],
-  ['Thai', /\p{Script=Thai}/u],
-];
-
-const languageProfiles: ProfileOption[] = [
-  { id: 'script-vocabulary', name: 'Script + vocabulary', detail: '< 2 KB' },
-  { id: 'script', name: 'Writing system', detail: '< 1 KB' },
-  { id: 'vocabulary', name: 'Latin vocabulary', detail: '< 2 KB' },
-];
-
-function hasLanguageSignal(input: string, signal: string) {
-  const words: string[] = input.toLocaleLowerCase().match(/\p{L}+/gu) ?? [];
-  if (signal.includes(' ')) return input.toLocaleLowerCase().includes(signal);
-  return words.includes(signal);
-}
-
-function detectLanguage(text: string, profile: string) {
-  const scriptMatch =
-    profile === 'vocabulary'
-      ? undefined
-      : scriptLanguages.find(([, pattern]) => pattern.test(text));
-  if (scriptMatch)
-    return { language: scriptMatch[0], score: 1, evidence: 'writing system' };
-
-  if (profile === 'script')
-    return {
-      language: 'Unknown',
-      score: 0,
-      evidence: 'no writing-system match',
-    };
-
-  const ranked = Object.entries(languageSignals)
-    .map(([language, signals]) => ({
-      language,
-      score: signals.reduce(
-        (score, signal) => score + (hasLanguageSignal(text, signal) ? 1 : 0),
-        0,
-      ),
-    }))
-    .sort((a, b) => b.score - a.score)[0];
-
-  return {
-    ...ranked,
-    evidence: ranked.score ? 'word signals' : 'no signal',
-  };
-}
+const languageProfiles: ProfileOption[] = LANGUAGE_MODEL_PROFILES.map((profile) => ({
+  id: profile.id,
+  name: profile.name,
+  detail: profile.detail,
+}));
 
 function LanguageDemo() {
-  const [text, setText] = useState('¿Dónde está mi pedido?');
-  const [profile, setProfile] = useState('script-vocabulary');
-  const result = useMemo(() => detectLanguage(text, profile), [profile, text]);
+  const [text, setText] = useState('ಕನ್ನಡ ಭಾಷೆಯ ವಿಶೇಷತೆಗಳು');
+  const [profile, setProfile] = useState<LanguageModelId>(DEFAULT_LANGUAGE_MODEL);
+  const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [result, setResult] = useState<LanguageDetection>();
+  const [error, setError] = useState<string>();
+  const detectorRef = useRef<LanguageDetector | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    const detector = createLanguageDetector(profile);
+    detectorRef.current = detector;
+    void detector
+      .warmup()
+      .then(() => active && setStatus('ready'))
+      .catch((caught: unknown) => {
+        if (!active) return;
+        setStatus('error');
+        setError(caught instanceof Error ? caught.message : 'Model failed to load.');
+      });
+    return () => {
+      active = false;
+      detector.destroy();
+      if (detectorRef.current === detector) detectorRef.current = null;
+    };
+  }, [profile]);
+
+  useEffect(() => {
+    if (status !== 'ready' || !text.trim()) {
+      return;
+    }
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => {
+      void detectorRef.current
+        ?.detect(text, controller.signal)
+        .then(setResult)
+        .catch((caught: unknown) => {
+          if (caught instanceof DOMException && caught.name === 'AbortError') return;
+          setError(caught instanceof Error ? caught.message : 'Detection failed.');
+        });
+    }, 120);
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+  }, [profile, status, text]);
+
   return (
     <div className="case-demo-body">
       <CaseProfilePicker
@@ -495,7 +485,12 @@ function LanguageDemo() {
         label="Local profile"
         options={languageProfiles}
         value={profile}
-        onChange={setProfile}
+        onChange={(value) => {
+          setStatus('loading');
+          setResult(undefined);
+          setError(undefined);
+          setProfile(value as LanguageModelId);
+        }}
       />
       <label className="micro-label" htmlFor="language-input">
         Short message
@@ -503,17 +498,41 @@ function LanguageDemo() {
       <textarea
         id="language-input"
         value={text}
-        onChange={(event) => setText(event.target.value)}
+        onChange={(event) => {
+          setText(event.target.value);
+          setResult(undefined);
+          setError(undefined);
+        }}
         rows={3}
       />
       <div className="micro-result">
         <span>Detected language</span>
-        <strong>{result.score ? result.language : 'Unknown'}</strong>
-        <b>{result.evidence}</b>
+        <strong>
+          {status === 'loading'
+            ? 'Loading model…'
+            : status === 'error'
+              ? 'Unavailable'
+              : result?.language ?? 'Enter text'}
+        </strong>
+        <b>
+          {status === 'loading' ? (
+            <LoaderCircle className="spin" />
+          ) : result ? (
+            `${Math.round(result.score * 100)} model score`
+          ) : (
+            '—'
+          )}
+        </b>
       </div>
+      {result && !result.reliable && (
+        <div className="micro-warning" role="status">
+          <AlertTriangle /> <span>{result.warning}</span>
+        </div>
+      )}
+      {error && <div className="micro-warning"><AlertTriangle /> <span>{error}</span></div>}
       <p className="micro-foot">
-        These are inspectable local profiles. Use a dedicated language-ID model
-        when languages share scripts or coverage must be broader.
+        ELD runs in a dedicated browser worker. The selected 60-language model reports its own
+        reliability; ambiguous text is shown as uncertain instead of defaulting to English.
       </p>
     </div>
   );
@@ -782,11 +801,11 @@ export function CasesSection({
               <span>
                 <Languages /> Language
               </span>
-              <b>&lt; 2 KB · rules</b>
+              <b>~294 KB gzip · model</b>
             </header>
             <div className="case-copy compact">
               <p className="micro-label">Language routing</p>
-              <h3>Select a locale or fallback before a form is submitted.</h3>
+              <h3>Detect a language or request review before routing content.</h3>
             </div>
             <LanguageDemo />
           </article>

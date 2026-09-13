@@ -4,9 +4,10 @@ import {
   SAFE_SHARE_SAMPLES,
   createSafeShare,
 } from '../lib/safe-share.ts';
+import { createInProcessLanguageDetector } from '../lib/language-model.node.ts';
 
-async function preflight(text) {
-  const runtime = createSafeShare();
+async function preflight(text, modelId) {
+  const runtime = createSafeShare(modelId, createInProcessLanguageDetector);
   try {
     return {
       outcome: await runtime.flow.run(runtime.kernel, { text }),
@@ -63,6 +64,31 @@ void test('SafeShare passes a clean release note and detects Telugu script', asy
   assert.equal(multilingual.outcome.result.output.language, 'Telugu');
   assert.equal(multilingual.outcome.result.output.disposition, 'review');
   assert.match(multilingual.outcome.result.output.redactedText, /\[EMAIL\]/);
+});
+
+void test('SafeShare identifies Kannada with statistical model profiles', async () => {
+  const text = 'ಕನ್ನಡ ಭಾಷೆಯ ವಿಶೇಷತೆಗಳು';
+  for (const modelId of ['eld-extrasmall', 'eld-small', 'eld-medium', 'eld-large']) {
+    const { outcome } = await preflight(text, modelId);
+    assert.equal(outcome.result.status, 'accepted');
+    assert.equal(outcome.result.output.languageCode, 'kn');
+    assert.equal(outcome.result.output.language, 'Kannada');
+    assert.equal(outcome.result.output.languageReliable, true);
+    assert.equal(outcome.result.output.languageModel, modelId);
+  }
+});
+
+void test('SafeShare preserves language uncertainty as a review finding', async () => {
+  const { outcome } = await preflight('hello');
+  assert.equal(outcome.result.status, 'accepted');
+  assert.equal(outcome.result.output.language, 'Uncertain');
+  assert.equal(outcome.result.output.languageReliable, false);
+  assert.equal(outcome.result.output.disposition, 'review');
+  assert.ok(
+    outcome.result.output.findings.some(
+      (finding) => finding.id === 'language-low-confidence',
+    ),
+  );
 });
 
 void test('SafeShare handles custom tokens, public HTTP, and long prose', async () => {

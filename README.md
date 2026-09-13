@@ -94,17 +94,18 @@ policy:
 ```ts
 import { defineLeanlet } from 'leanlet-ai';
 
-const languageRoute = defineLeanlet<string, 'te' | 'en'>({
-  id: 'language.route',
+const readingEstimate = defineLeanlet<string, { words: number; minutes: number }>({
+  id: 'text.reading-estimate',
   infer(text) {
-    return /\p{Script=Telugu}/u.test(text) ? 'te' : 'en';
+    const words = text.match(/[\p{L}\p{N}]+/gu)?.length ?? 0;
+    return { words, minutes: Math.max(0.1, words / 225) };
   },
 });
 
-const route = await languageRoute.run(message);
+const estimate = await readingEstimate.run(message);
 
 // Release model, worker, or index state during application teardown.
-await languageRoute.destroy();
+await readingEstimate.destroy();
 ```
 
 For capabilities with reusable state, add `load` and `dispose`:
@@ -139,6 +140,7 @@ Use `leanlet-ai@next` when several capabilities need a shared control plane.
 ```ts
 import {
   accepted,
+  abstained,
   createLeanletKernel,
   defineFlow,
   type KernelLeanletDefinition,
@@ -151,7 +153,7 @@ const kernel = createLeanletKernel({
     defaultDeadlineMs: 2_000,
   },
   policy: {
-    network: 'deny',
+    network: 'static-assets',
     allowedProviders: ['javascript', 'wasm-single'],
   },
 });
@@ -160,18 +162,23 @@ const kernel = createLeanletKernel({
 ### 2. Register bounded capabilities
 
 ```ts
-const language: KernelLeanletDefinition<string, 'te' | 'en'> = {
+const language: KernelLeanletDefinition<string, DetectedLanguage, LanguageModel> = {
   manifest: {
     id: 'content.language',
     version: '1.0.0',
     task: 'language-routing',
     providers: ['javascript'],
-    network: 'deny',
-    estimatedResidentBytes: 2_048,
+    network: 'static-assets',
+    estimatedResidentBytes: 37 * 1024 * 1024,
   },
-  run(text) {
-    return accepted(/\p{Script=Telugu}/u.test(text) ? 'te' : 'en');
+  load: () => createLanguageModel(),
+  async run(text, model) {
+    const result = await model.detect(text);
+    return result.reliable
+      ? accepted({ code: result.code, score: result.score })
+      : abstained('low-score', result.candidates);
   },
+  dispose: (model) => model.destroy(),
 };
 
 kernel.register(language);
@@ -341,6 +348,7 @@ the included `npm run benchmark:kernel` synthetic scheduler benchmark.
 | [Live capability cases](https://sukumarrekapalli.github.io/leanlet/#cases)      | Vision, routing, ranking, anomaly, retrieval, language, forecasting, and matching examples                      |
 | [Architecture](docs/ARCHITECTURE.md)                                            | Layer ownership, execution sequence, lifecycle, scheduling, and security boundaries                             |
 | [Adapter authoring](docs/ADAPTERS.md)                                           | Requirements for wrapping a model, worker, WASM runtime, index, or algorithm                                    |
+| [Language adapter](docs/LANGUAGE_MODELS.md)                                     | Worker lifecycle, selectable ELD profiles, reliability semantics, coverage, and production validation          |
 | [Performance](docs/PERFORMANCE.md)                                              | Measurement model, coalescing, budgets, and benchmark interpretation                                            |
 | [Release notes](docs/releases/0.3.0-beta.1.md)                                  | Beta changes, reliability work, and known constraints                                                           |
 | [Next release](docs/NEXT_RELEASE.md)                                            | Current beta.2 engineering priorities and stable promotion gates                                                |

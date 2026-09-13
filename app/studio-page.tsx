@@ -32,6 +32,12 @@ import {
   type SafeShareDecision,
   type SafeShareFinding,
 } from '@/lib/safe-share';
+import {
+  DEFAULT_LANGUAGE_MODEL,
+  LANGUAGE_MODEL_PROFILES,
+  languageModelProfile,
+  type LanguageModelId,
+} from '@/lib/language-model';
 
 type Runtime = ReturnType<typeof createSafeShare>;
 
@@ -82,21 +88,42 @@ export default function SafeShareStudio() {
   const [running, setRunning] = useState(false);
   const [error, setError] = useState<string>();
   const [copied, setCopied] = useState(false);
+  const [languageModel, setLanguageModel] =
+    useState<LanguageModelId>(DEFAULT_LANGUAGE_MODEL);
+  const [modelStatus, setModelStatus] = useState<'loading' | 'ready' | 'error'>('loading');
 
   useEffect(() => {
-    const runtime = createSafeShare();
+    let active = true;
+    const runtime = createSafeShare(languageModel);
     runtimeRef.current = runtime;
     const unsubscribe = runtime.kernel.subscribe((event) => {
       setEvents((current) => [event, ...current].slice(0, 24));
       setSnapshot(runtime.kernel.inspect());
     });
+    void runtime.kernel
+      .prewarm('safeshare.language', { deadlineMs: 30_000 })
+      .then(() => {
+        if (active) {
+          setModelStatus('ready');
+          setSnapshot(runtime.kernel.inspect());
+        }
+      })
+      .catch((caught: unknown) => {
+        if (active) {
+          setModelStatus('error');
+          setError(
+            caught instanceof Error ? caught.message : 'The language model did not load.',
+          );
+        }
+      });
     return () => {
+      active = false;
       abortRef.current?.abort();
       unsubscribe();
       void runtime.kernel.destroy();
       runtimeRef.current = null;
     };
-  }, []);
+  }, [languageModel]);
 
   const completedIds = useMemo(
     () => new Set(trace.filter((item) => item.status === 'accepted').map((item) => item.leanletId)),
@@ -123,6 +150,16 @@ export default function SafeShareStudio() {
     setError(undefined);
   };
 
+  const chooseLanguageModel = (modelId: LanguageModelId) => {
+    abortRef.current?.abort();
+    setModelStatus('loading');
+    setDecision(undefined);
+    setTrace([]);
+    setEvents([]);
+    setError(undefined);
+    setLanguageModel(modelId);
+  };
+
   const run = async () => {
     const runtime = runtimeRef.current;
     if (!runtime || !text.trim()) return;
@@ -138,7 +175,7 @@ export default function SafeShareStudio() {
       const outcome = await runtime.flow.run(
         runtime.kernel,
         { text },
-        { signal: controller.signal, deadlineMs: 2_000, priority: 5 },
+        { signal: controller.signal, deadlineMs: 15_000, priority: 5 },
       );
       if (outcome.result.status === 'failed') throw outcome.result.error;
       if (outcome.result.status === 'abstained')
@@ -169,7 +206,7 @@ export default function SafeShareStudio() {
       <header className="studio-header">
         <a href="../" className="studio-back"><ArrowLeft /> Framework</a>
         <Logo />
-        <div className="studio-local"><span /> Local runtime · network denied</div>
+        <div className="studio-local"><span /> Local runtime · no inference API</div>
       </header>
 
       <section className="studio-hero">
@@ -182,8 +219,8 @@ export default function SafeShareStudio() {
         <div className="studio-facts">
           <span><b>8</b> scoped capabilities</span>
           <span><b>4</b> concurrent slots</span>
-          <span><b>0</b> runtime network calls</span>
-          <span><b>&lt; 24 KB</b> declared state</span>
+          <span><b>0</b> inference API calls</span>
+          <span><b>1</b> cached model asset</span>
         </div>
       </section>
 
@@ -205,6 +242,29 @@ export default function SafeShareStudio() {
               </button>
             ))}
           </div>
+          <label className="studio-model-picker" htmlFor="studio-language-model">
+            <span>
+              <strong>Language model</strong>
+              <small>
+                {modelStatus === 'loading'
+                  ? 'Loading in a dedicated worker…'
+                  : modelStatus === 'ready'
+                    ? 'Ready in a dedicated worker'
+                    : 'Model load failed'}
+              </small>
+            </span>
+            <select
+              id="studio-language-model"
+              value={languageModel}
+              onChange={(event) => chooseLanguageModel(event.target.value as LanguageModelId)}
+            >
+              {LANGUAGE_MODEL_PROFILES.map((profile) => (
+                <option key={profile.id} value={profile.id}>
+                  {profile.name} · {profile.detail}
+                </option>
+              ))}
+            </select>
+          </label>
           <label className="studio-textarea-label">
             <span>Message, note, or generated content</span>
             <textarea
@@ -219,10 +279,14 @@ export default function SafeShareStudio() {
             />
             <small>{text.length.toLocaleString()} characters · content stays in this tab</small>
           </label>
-          <button className="studio-run" type="button" onClick={() => void run()} disabled={running || !text.trim()}>
-            {running ? <LoaderCircle className="spin" /> : <Play />}
-            {running ? 'Running local preflight' : 'Run local preflight'}
-            {!running && <ArrowRight />}
+          <button className="studio-run" type="button" onClick={() => void run()} disabled={running || modelStatus !== 'ready' || !text.trim()}>
+            {running || modelStatus === 'loading' ? <LoaderCircle className="spin" /> : <Play />}
+            {modelStatus === 'loading'
+              ? 'Loading language model'
+              : running
+                ? 'Running local preflight'
+                : 'Run local preflight'}
+            {!running && modelStatus === 'ready' && <ArrowRight />}
           </button>
           <p className="studio-caveat">
             This reference policy demonstrates composition. Its inspectable pattern checks are not a
@@ -251,9 +315,18 @@ export default function SafeShareStudio() {
               <div className="studio-metrics">
                 <span><b>{decision.counts.block}</b> blocking</span>
                 <span><b>{decision.counts.review}</b> review</span>
-                <span><b>{decision.language}</b> language</span>
+                <span title={`Model score ${Math.round(decision.languageScore * 100)}%`}><b>{decision.language}</b>{decision.languageReliable ? 'language' : 'language · low confidence'}</span>
                 <span><b>{decision.readingLevel}</b> readability</span>
               </div>
+              {!decision.languageReliable && (
+                <div className="studio-quality-warning" role="status">
+                  <AlertOctagon />
+                  <div>
+                    <strong>Language output needs review</strong>
+                    <p>{decision.languageWarning}</p>
+                  </div>
+                </div>
+              )}
               <div className="studio-findings">
                 <div className="studio-subhead"><strong>Signals</strong><span>{decision.findings.length} found</span></div>
                 {decision.findings.length === 0 ? (
@@ -310,7 +383,8 @@ export default function SafeShareStudio() {
           <div className="studio-flow-stats">
             <span><Clock3 /> Flow span {formatMs(criticalPathMs)}</span>
             <span><Gauge /> {snapshot?.telemetry.completedRuns ?? 0} completed runs</span>
-            <span><Network /> network: deny</span>
+            <span><Network /> inference API: none</span>
+            <span><Languages /> {languageModelProfile(languageModel).name}</span>
           </div>
         </div>
       </section>

@@ -31,6 +31,7 @@ const sections = [
   ['results', 'Results and errors'],
   ['assets', 'Assets and budgets'],
   ['vision', 'Vision runtime'],
+  ['language-models', 'Language identification'],
   ['evaluation', 'Evaluation'],
   ['observability', 'Observability'],
   ['production', 'Production guide'],
@@ -179,7 +180,7 @@ export default function Docs() {
             </a>
           ))}
           <p>Operations</p>
-          {sections.slice(11, 17).map(([id, label]) => (
+          {sections.slice(11, 18).map(([id, label]) => (
             <a href={`#${id}`} key={id}>
               {label}
             </a>
@@ -327,15 +328,16 @@ npx leanlet models add mobilenet-v4-small --dir public/leanlet-assets`}</Code>
             <h2>Build one local capability—no kernel required</h2>
             <Code>{`import { defineLeanlet } from 'leanlet-ai';
 
-const languageRoute = defineLeanlet<string, 'te' | 'en'>({
-  id: 'language.route',
+const readingEstimate = defineLeanlet<string, { words: number; minutes: number }>({
+  id: 'text.reading-estimate',
   infer(text) {
-    return /\\p{Script=Telugu}/u.test(text) ? 'te' : 'en';
+    const words = text.match(/[\\p{L}\\p{N}]+/gu)?.length ?? 0;
+    return { words, minutes: Math.max(0.1, words / 225) };
   },
 });
 
-const route = await languageRoute.run(message);
-await languageRoute.destroy();`}</Code>
+const estimate = await readingEstimate.run(message);
+await readingEstimate.destroy();`}</Code>
             <p>
               <code>load</code> is optional and lazy. Simultaneous first runs
               share the same load promise. <code>warmup()</code> starts loading
@@ -389,21 +391,26 @@ const kernel = createLeanletKernel({
           <section id="leanlets">
             <p className="docs-kicker">Capability contract</p>
             <h2>Define and register a Leanlet</h2>
-            <Code>{`import { accepted, type KernelLeanletDefinition } from 'leanlet-ai';
+            <Code>{`import { accepted, abstained, type KernelLeanletDefinition } from 'leanlet-ai';
 
-const languageRoute: KernelLeanletDefinition<string, string[]> = {
+const languageRoute: KernelLeanletDefinition<string, DetectedLanguage, LanguageModel> = {
   manifest: {
     id: 'language.route', version: '1.0.0', task: 'language-routing',
-    providers: ['javascript'], network: 'deny', estimatedResidentBytes: 8_192,
+    providers: ['javascript'], network: 'static-assets',
+    estimatedResidentBytes: 37 * 1024 * 1024,
   },
-  run(text) {
-    const routes = /\\p{Script=Telugu}/u.test(text) ? ['te-IN'] : ['en'];
-    return accepted(routes, { score: 0.98 });
+  load: () => createLanguageModel(),
+  async run(text, model) {
+    const result = await model.detect(text);
+    return result.reliable
+      ? accepted({ code: result.code, score: result.score })
+      : abstained('low-score', result.candidates);
   },
+  dispose: (model) => model.destroy(),
 };
 
 kernel.register(languageRoute);
-const result = await kernel.run<string, string[]>('language.route', input);`}</Code>
+const result = await kernel.run<string, DetectedLanguage>('language.route', input);`}</Code>
             <p>
               <code>load</code> runs lazily once per loaded lifetime and may
               return model, worker, index, or cache state. <code>run</code>{' '}
@@ -710,6 +717,72 @@ vision.destroy();`}</Code>
               active backend inference call may finish before the worker can
               observe it.
             </p>
+          </section>
+
+          <section id="language-models">
+            <p className="docs-kicker">Reference adapter</p>
+            <h2>Language identification without a language routing table</h2>
+            <p>
+              SafeShare and the language case use ELD 2.1.0, an Apache-2.0
+              statistical n-gram detector, inside a dedicated module worker.
+              The adapter does not inspect Unicode scripts, maintain vocabulary
+              lists, or default unmatched input to English. It leaves the model’s
+              60-language set unrestricted and converts an unreliable detection
+              into a visible review state.
+            </p>
+            <p>
+              The compact example below shows the Leanlet result contract with an
+              in-page ELD import. The reference application adds a module-worker
+              RPC wrapper around the same detector to keep loading and detection
+              off the UI thread.
+            </p>
+            <Code>{`import { accepted, abstained, type KernelLeanletDefinition } from 'leanlet-ai';
+import { eld } from 'eld/extrasmall';
+
+const language: KernelLeanletDefinition<string, { code: string; score: number }, typeof eld> = {
+  manifest: {
+    id: 'text.language', version: '1.0.0', task: 'language-identification',
+    providers: ['javascript'], network: 'static-assets',
+    estimatedResidentBytes: 37 * 1024 * 1024,
+  },
+  load: () => eld,
+  run: (text, model) => {
+    const result = model.detect(text);
+    const score = result.getScores()[result.language] ?? 0;
+    if (!result.language || !result.isReliable())
+      return abstained('low-score', Object.entries(result.getScores()));
+    return accepted({ code: result.language, score });
+  },
+};
+
+kernel.register(language);`}</Code>
+            <div className="docs-callout amber">
+              <ShieldCheck />
+              <div>
+                <strong>Reliability is not the same as a calibrated probability</strong>
+                <p>
+                  ELD’s score and <code>isReliable()</code> are model signals. Keep
+                  an uncertain state, evaluate your real language distribution,
+                  and avoid using a top candidate as proof when the detector
+                  reports insufficient evidence.
+                </p>
+              </div>
+            </div>
+            <div className="docs-table">
+              <div><span>Profile</span><span>Packaged data</span><span>Declared resident estimate</span></div>
+              <div><strong>eld-extrasmall<small>default</small></strong><span>~294 KB gzip</span><span>37 MB</span></div>
+              <div><strong>eld-small</strong><span>~477 KB gzip</span><span>54 MB</span></div>
+              <div><strong>eld-medium</strong><span>~586 KB gzip</span><span>71 MB</span></div>
+              <div><strong>eld-large<small>largest profile</small></strong><span>~1.28 MB gzip</span><span>138 MB</span></div>
+            </div>
+            <h3>Model selection and coverage</h3>
+            <ul>
+              <li>Each profile has an independent worker build entry; the browser requests only the selected worker asset.</li>
+              <li>Switching profiles destroys the old worker before creating and prewarming the new one.</li>
+              <li>No language subset is configured; all 60 languages contained in the profile remain candidates.</li>
+              <li>Languages outside that set are unsupported. Short, mixed, or weak text can also be uncertain.</li>
+              <li>Use the same input corpus to compare profiles; a larger database is not automatically sufficient for your domain.</li>
+            </ul>
           </section>
 
           <section id="evaluation">
