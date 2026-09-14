@@ -1,19 +1,17 @@
 # Next release working plan
 
 This is an engineering tracker, not a delivery promise. Reassess priorities
-after 0.3.0-beta.1 usage feedback and issue reports.
+after 0.3.0-beta.3 usage feedback and issue reports.
 
-## Proposed 0.3.0-beta.2 — conformance and integration
+## Proposed 0.3.0-beta.4 — conformance and integration
 
 ### Milestone 1 — dependency-light core
 
-- Separate the kernel, flow, result, asset-planning, and evaluation contracts
+- Separate the remaining asset-planning and evaluation contracts
   from the vision adapter.
 - Keep the current root import working through a documented compatibility
   window while providing an explicit vision entry or adapter package.
-- Ensure a core install does not pull the approximately 47 MB installed
-  `@huggingface/transformers` dependency tree.
-- Publish measured install and browser-bundle impact before and after the split.
+- Measure and publish install and browser-bundle impact after the optional-peer split shipped in beta.3.
 
 Exit evidence: package-content snapshots, bundle-size checks, compatibility
 tests for existing imports, and an upgrade note that includes rollback.
@@ -75,7 +73,7 @@ defects in the tested matrix.
 - reproducible package, asset-integrity, and provenance checks;
 - at least one external integration completed without repository-specific code.
 
-## Explicitly out of scope for beta.2
+## Explicitly out of scope for beta.4
 
 - durable or server-side workflow execution;
 - a hosted inference service or model marketplace;

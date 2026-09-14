@@ -1,6 +1,6 @@
 # Leanlet 0.3 API reference
 
-This reference covers the public exports of `leanlet-ai@0.3.0-beta.2`. The
+This reference covers the public exports of `leanlet-ai@0.3.0-beta.3`. The
 [web API reference](https://sukumarrekapalli.github.io/leanlet/docs/api/)
 contains the same contract in navigable form.
 

@@ -25,7 +25,7 @@ narrow local intelligence predictable enough to ship where it provides a
 measurable product benefit.
 
 > **Release status:** `0.2.0` is the public stable line. The managed kernel and
-> flow APIs are available in `0.3.0-beta.2` under npm tag `next`. The 0.2
+> flow APIs are available in `0.3.0-beta.3` under npm tag `next`. The 0.2
 > single-capability API remains supported in the beta. See the
 > [migration guide](https://sukumarrekapalli.github.io/leanlet/docs/migrate/).
 
@@ -80,6 +80,13 @@ npm install leanlet-ai
 
 # 0.3 beta: adds kernel, flows, asset planning, and evaluation
 npm install leanlet-ai@next --save-exact
+```
+
+Kernel-only applications need no model backend. The built-in vision adapter has
+an optional peer that vision applications install explicitly:
+
+```bash
+npm install leanlet-ai@next @huggingface/transformers
 ```
 
 The package is ESM and framework-agnostic. It can be called from React,
@@ -350,8 +357,8 @@ the included `npm run benchmark:kernel` synthetic scheduler benchmark.
 | [Adapter authoring](docs/ADAPTERS.md)                                           | Requirements for wrapping a model, worker, WASM runtime, index, or algorithm                                    |
 | [Language adapter](docs/LANGUAGE_MODELS.md)                                     | Worker lifecycle, selectable ELD profiles, reliability semantics, coverage, and production validation          |
 | [Performance](docs/PERFORMANCE.md)                                              | Measurement model, coalescing, budgets, and benchmark interpretation                                            |
-| [Release notes](docs/releases/0.3.0-beta.1.md)                                  | Beta changes, reliability work, and known constraints                                                           |
-| [Next release](docs/NEXT_RELEASE.md)                                            | Current beta.2 engineering priorities and stable promotion gates                                                |
+| [Release notes](docs/releases/0.3.0-beta.3.md)                                  | Current package split, compatibility, and installation changes                                                  |
+| [Next release](docs/NEXT_RELEASE.md)                                            | Current beta.4 engineering priorities and stable promotion gates                                                |
 | [Security policy](SECURITY.md)                                                  | Vulnerability reporting and framework security boundaries                                                       |
 | [Contributing](CONTRIBUTING.md)                                                 | Repository setup, checks, and contribution expectations                                                         |
 
@@ -376,10 +383,9 @@ and the [full limitations](https://sukumarrekapalli.github.io/leanlet/docs/#limi
 
 ## Release roadmap
 
-The next planned prerelease is `0.3.0-beta.2`, centered on:
+The next planned prerelease is `0.3.0-beta.4`, centered on:
 
-1. separating a dependency-light core from the vision adapter while preserving
-   the current root import through a compatibility window;
+1. separating the remaining asset-planning and evaluation contracts into focused entries;
 2. an adapter conformance suite and manifest JSON Schema;
 3. reusable worker-RPC and small ONNX adapter primitives;
 4. Chromium, Firefox, and WebKit integration evidence, including constrained

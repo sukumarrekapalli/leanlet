@@ -3,6 +3,19 @@
 All notable changes are documented here. The project follows semantic
 versioning; prerelease APIs may change between beta releases.
 
+## 0.3.0-beta.3
+
+- Made `@huggingface/transformers` an optional peer instead of an unconditional
+  runtime dependency. Kernel-only and custom-adapter consumers no longer install
+  the vision dependency tree.
+- Retained the root vision entry for backward compatibility; applications using
+  the built-in vision adapter now install the optional peer explicitly.
+
+## 0.3.0-beta.2
+
+- Added the focused `leanlet-ai/kernel` package entry so non-vision bundles can
+  import orchestration without reaching vision adapter code.
+
 ## 0.3.0-beta.1
 
 - Added `LeanletKernel` with typed registration, lazy loading, runtime reuse,

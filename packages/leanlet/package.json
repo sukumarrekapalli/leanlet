@@ -1,6 +1,6 @@
 {
   "name": "leanlet-ai",
-  "version": "0.3.0-beta.2",
+  "version": "0.3.0-beta.3",
   "description": "Coordinate bounded, task-specific intelligence inside web applications.",
   "type": "module",
   "license": "Apache-2.0",
@@ -50,8 +50,13 @@
     "ai-orchestration",
     "edge-ai"
   ],
-  "dependencies": {
+  "peerDependencies": {
     "@huggingface/transformers": "^3.8.1"
+  },
+  "peerDependenciesMeta": {
+    "@huggingface/transformers": {
+      "optional": true
+    }
   },
   "publishConfig": {
     "access": "public"

@@ -57,6 +57,13 @@ npm install leanlet-ai
 npm install leanlet-ai@next --save-exact
 ```
 
+Kernel-only applications need no model-runtime package. Applications using the
+built-in vision adapter must install its optional peer explicitly:
+
+```bash
+npm install leanlet-ai@next @huggingface/transformers
+```
+
 The package is ESM and framework-agnostic. It can be called from React,
 Angular, Vue, Svelte, or plain TypeScript. Model weights are not bundled.
 
