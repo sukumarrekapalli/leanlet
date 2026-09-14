@@ -1,8 +1,12 @@
 # Leanlet 0.3 API reference
 
-This reference covers the public exports of `leanlet-ai@0.3.0-beta.1`. The
+This reference covers the public exports of `leanlet-ai@0.3.0-beta.2`. The
 [web API reference](https://sukumarrekapalli.github.io/leanlet/docs/api/)
 contains the same contract in navigable form.
+
+Applications using the kernel and flow APIs without vision should import from
+`leanlet-ai/kernel`. The focused entry excludes the vision implementation and
+its ONNX runtime assets from the reachable module graph.
 
 ## Which API to use
 

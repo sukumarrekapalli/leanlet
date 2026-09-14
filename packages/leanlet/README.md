@@ -2,6 +2,14 @@
 
 **Scoped intelligence for browser applications.**
 
+For kernel and flow use without the optional vision runtime, import the focused browser entry:
+
+```ts
+import { accepted, createLeanletKernel, defineFlow } from 'leanlet-ai/kernel';
+```
+
+This entry prevents applications that do not use `VisionLeanlet` from emitting vision worker and ONNX runtime assets.
+
 [Website](https://sukumarrekapalli.github.io/leanlet/) ·
 [Guide](https://sukumarrekapalli.github.io/leanlet/docs/) ·
 [API reference](https://sukumarrekapalli.github.io/leanlet/docs/api/) ·

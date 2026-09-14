@@ -14,6 +14,7 @@
   },
   "include": [
     "src/index.ts",
+    "src/kernel.ts",
     "src/core.ts",
     "src/flow.ts",
     "src/asset-plan.ts",

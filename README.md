@@ -25,7 +25,7 @@ narrow local intelligence predictable enough to ship where it provides a
 measurable product benefit.
 
 > **Release status:** `0.2.0` is the public stable line. The managed kernel and
-> flow APIs are available in `0.3.0-beta.1` under npm tag `next`. The 0.2
+> flow APIs are available in `0.3.0-beta.2` under npm tag `next`. The 0.2
 > single-capability API remains supported in the beta. See the
 > [migration guide](https://sukumarrekapalli.github.io/leanlet/docs/migrate/).
 

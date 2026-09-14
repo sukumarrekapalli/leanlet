@@ -1,10 +1,10 @@
 # Migrating from Leanlet 0.2 to 0.3
 
-The public stable release is 0.2.0. Version 0.3.0-beta.1 is a prerelease. Test
+The public stable release is 0.2.0. Version 0.3.0-beta.2 is a prerelease. Test
 it with an exact pin:
 
 ```bash
-npm install leanlet-ai@0.3.0-beta.1 --save-exact
+npm install leanlet-ai@0.3.0-beta.2 --save-exact
 ```
 
 ## Compatibility summary

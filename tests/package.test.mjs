@@ -11,9 +11,18 @@ void test('package metadata uses the public npm identity', async () => {
     await readFile('packages/leanlet/package.json', 'utf8'),
   );
   assert.equal(metadata.name, 'leanlet-ai');
-  assert.equal(metadata.version, '0.3.0-beta.1');
+  assert.equal(metadata.version, '0.3.0-beta.2');
   assert.equal(metadata.license, 'Apache-2.0');
   assert.equal(metadata.bin.leanlet, 'bin/leanlet.mjs');
+  assert.deepEqual(metadata.exports['./kernel'], {
+    types: './dist/kernel.d.ts',
+    import: './dist/kernel.js',
+  });
+});
+
+void test('kernel-only entry does not pull the vision implementation', async () => {
+  const kernelEntry = await readFile('packages/leanlet/dist/kernel.js', 'utf8');
+  assert.doesNotMatch(kernelEntry, /vision|transformers|onnx/i);
 });
 
 void test('asset CLI lists every supported profile', async () => {
