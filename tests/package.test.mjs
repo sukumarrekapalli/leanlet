@@ -11,7 +11,7 @@ void test('package metadata uses the public npm identity', async () => {
     await readFile('packages/leanlet/package.json', 'utf8'),
   );
   assert.equal(metadata.name, 'leanlet-ai');
-  assert.equal(metadata.version, '0.3.0-beta.3');
+  assert.equal(metadata.version, '0.3.0-beta.4');
   assert.equal(metadata.license, 'Apache-2.0');
   assert.equal(metadata.bin.leanlet, 'bin/leanlet.mjs');
   assert.deepEqual(metadata.exports['./kernel'], {

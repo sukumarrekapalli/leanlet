@@ -85,6 +85,18 @@ function Logo() {
   );
 }
 
+function InvariantLogo() {
+  return (
+    <span className="invariant-product-logo">
+      <svg viewBox="0 0 40 40" aria-hidden="true">
+        <path d="M7 8h26M7 20h19M7 32h26" />
+        <path className="invariant-caret" d="m27 15 6 5-6 5" />
+      </svg>
+      <span>INVARIANT</span>
+    </span>
+  );
+}
+
 function StatusPill({ runtime }: { runtime: RuntimeState }) {
   return (
     <span className={`status-pill status-${runtime}`}>
@@ -222,6 +234,7 @@ export default function Home() {
             <a href="#platform">Platform</a>
             <a href="#studio">SafeShare</a>
             <a href="#cases">Use cases</a>
+            <a href="#products">Products</a>
             <a href="#models">Models</a>
             <a href="./docs/">Docs</a>
           </nav>
@@ -804,6 +817,48 @@ export default function Home() {
         onVisionModelChange={chooseModel}
       />
 
+      <section id="products" className="products-section">
+        <div className="shell">
+          <div className="section-heading">
+            <div>
+              <p className="section-kicker">Built with Leanlet</p>
+              <h2>Products that prove the architecture.</h2>
+            </div>
+            <p>
+              Reference products use the public framework contracts in real
+              workflows. Each one gives Leanlet a practical performance,
+              lifecycle, and product-quality test.
+            </p>
+          </div>
+          <a
+            className="product-card"
+            href="https://sukumarrekapalli.github.io/invariant/"
+            target="_blank"
+            rel="noreferrer"
+            aria-label="Open Invariant, a private writing product built with Leanlet"
+          >
+            <div className="product-card-copy">
+              <span className="product-status"><i /> Featured product</span>
+              <InvariantLogo />
+              <h3>Write alone. Not unaided.</h3>
+              <p>
+                A private writing desk that coordinates language, spelling,
+                readability, privacy, reference, and document-assistant
+                capabilities directly in the browser.
+              </p>
+              <div className="product-capabilities">
+                <span>Local review</span><span>Author-controlled edits</span><span>No inference API for core checks</span>
+              </div>
+            </div>
+            <div className="product-card-meta">
+              <span>Powered by</span>
+              <Logo />
+              <strong>Open Invariant <ArrowRight /></strong>
+            </div>
+          </a>
+        </div>
+      </section>
+
       <section
         id="models"
         className="border-y border-[#dfe5ef] bg-[#f8faff] py-20 lg:py-28"
@@ -890,7 +945,7 @@ export default function Home() {
             <div className="install-command">
               <span>$</span>
               <code>npm install leanlet-ai</code>
-              <span>v0.3.0-beta.1</span>
+              <span>next · beta.2</span>
             </div>
             <pre>
               <code>
@@ -1018,7 +1073,7 @@ export default function Home() {
             >
               <GitFork /> Open source
             </a>
-            <span>Apache-2.0 · v0.3.0-beta.1</span>
+            <span>Apache-2.0 · stable 0.2 · next beta.2</span>
           </div>
         </div>
         <div className="shell footer-bottom">

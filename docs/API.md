@@ -1,6 +1,6 @@
 # Leanlet 0.3 API reference
 
-This reference covers the public exports of `leanlet-ai@0.3.0-beta.3`. The
+This reference covers the local `leanlet-ai@0.3.0-beta.4` release candidate. The
 [web API reference](https://sukumarrekapalli.github.io/leanlet/docs/api/)
 contains the same contract in navigable form.
 
@@ -15,6 +15,8 @@ its ONNX runtime assets from the reachable module graph.
 - Add `LeanletKernel` when capabilities need shared scheduling, policy,
   lifecycle, declared-memory budgets, structured results, or observability.
 - Add `defineFlow` when several registered capabilities produce one result.
+- Add `defineCheck` and `runCheck` when a product check should route through a
+  registered Leanlet and preserve its abstention, timing, and provenance.
 
 The managed APIs are additive; a single Leanlet does not require a kernel.
 
@@ -158,6 +160,15 @@ procedure supports it.
 Timing contains `queuedMs`, `loadMs`, `runMs`, and `totalMs`. Provenance
 contains `leanletId`, `leanletVersion`, and `provider`.
 
+## Application checks
+
+`defineCheck()` declares a stable check ID/version, a target `leanletId`, a
+typed `prepare(subject)` mapping, and a `decide(output, subject)` function.
+`runCheck(kernel, check, subject, options?)` delegates computation through the
+kernel. A completed decision has verdict `pass`, `review`, or `fail`; underlying
+abstention and failure stay explicit and retain timing/provenance. See the
+[complete checks guide](CHECKS.md).
+
 ## Flows
 
 ```ts
@@ -203,6 +214,15 @@ paths, detects conflicting size/hash declarations, and returns sorted assets,
 total/verified bytes, unverified paths, duplicate references, and budget status.
 `maxBytes` sets `withinBudget`; it does not throw. Missing required hashes and
 conflicting definitions throw `LOAD_FAILED`.
+
+## Custom model packs
+
+`defineModelPack(pack)` validates and freezes portable model metadata.
+`defineModelLeanlet(definition)` maps that model pack into a managed
+`KernelLeanletDefinition`; it does not impose an inference runtime. This keeps
+ONNX, WASM, WebGPU, WebNN, WebLLM, and application-owned adapters behind the
+same lifecycle and result contract. See [Custom model packs](CUSTOM_MODELS.md)
+for the complete fields, example, and limits.
 
 ## Classification evaluation
 

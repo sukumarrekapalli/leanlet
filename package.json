@@ -61,5 +61,23 @@
     "vite": "8.0.13",
     "wrangler": "4.92.0"
   },
-  "type": "module"
+  "type": "module",
+  "description": "**Scoped intelligence for browser applications.**",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs",
+    "lib": "lib",
+    "test": "tests"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sukumarrekapalli/leanlet.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/sukumarrekapalli/leanlet/issues"
+  },
+  "homepage": "https://github.com/sukumarrekapalli/leanlet#readme"
 }

@@ -3,6 +3,20 @@
 All notable changes are documented here. The project follows semantic
 versioning; prerelease APIs may change between beta releases.
 
+## 0.3.0-beta.4 (release candidate)
+
+- Added `defineModelPack()` for immutable model identity, revision, format,
+  licensing, language coverage, provider, asset, context, quantization, and
+  declared-memory metadata.
+- Added `defineModelLeanlet()` to adapt application-supplied models to the
+  existing kernel lifecycle without requiring a framework-owned inference
+  backend.
+- Added contract tests covering provider selection, provenance, resource
+  declarations, immutability, and invalid model metadata.
+- Added `defineCheck()` and `runCheck()` for typed application checks delegated
+  to registered Leanlets with explicit verdicts and preserved abstention,
+  timing, failure, and provenance.
+
 ## 0.3.0-beta.3
 
 - Made `@huggingface/transformers` an optional peer instead of an unconditional

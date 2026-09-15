@@ -38,6 +38,8 @@ application; framework policy is admission control, not a JavaScript sandbox.
 - [Run one Leanlet](#run-one-leanlet)
 - [Coordinate several Leanlets](#coordinate-several-leanlets)
 - [Compose a flow](#compose-a-flow)
+- [Bring a custom model](#bring-a-custom-model)
+- [Define application checks](#define-application-checks)
 - [Handle results](#handle-results)
 - [Use browser vision](#use-browser-vision)
 - [Framework surface](#framework-surface)
@@ -74,6 +76,8 @@ Angular, Vue, Svelte, or plain TypeScript. Model weights are not bundled.
 | One lazy capability                                     | `defineLeanlet()`          |
 | Shared scheduling, lifecycle, policy, or budgets        | `LeanletKernel`            |
 | Explicit composition of several registered capabilities | `defineFlow()`             |
+| Application-owned model and runtime                      | `defineModelLeanlet()`     |
+| Product check delegated through the kernel               | `defineCheck()` / `runCheck()` |
 | Supported image classification profiles                 | `VisionLeanlet`            |
 | Release-time asset metadata and integrity checks        | `planLeanletAssets()`      |
 | Classification quality and latency metrics              | `evaluateClassification()` |
@@ -89,15 +93,15 @@ The minimal API has no hidden global kernel, queue, worker, or network behavior:
 ```ts
 import { defineLeanlet } from 'leanlet-ai';
 
-const languageRoute = defineLeanlet<string, 'te' | 'en'>({
-  id: 'language.route',
+const readingEstimate = defineLeanlet<string, number>({
+  id: 'text.word-count',
   infer(text) {
-    return /\p{Script=Telugu}/u.test(text) ? 'te' : 'en';
+    return text.match(/[\p{L}\p{N}]+/gu)?.length ?? 0;
   },
 });
 
-const route = await languageRoute.run(message);
-await languageRoute.destroy();
+const words = await readingEstimate.run(message);
+await readingEstimate.destroy();
 ```
 
 For reusable state, supply `load` and `dispose`. Loading remains lazy unless
@@ -142,20 +146,20 @@ const kernel = createLeanletKernel({
 
 kernel.register({
   manifest: {
-    id: 'content.language',
+    id: 'content.length',
     version: '1.0.0',
-    task: 'language-routing',
+    task: 'length-signal',
     providers: ['javascript'],
     network: 'deny',
     estimatedResidentBytes: 2_048,
   },
   run(text: string) {
-    return accepted(/\p{Script=Telugu}/u.test(text) ? 'te' : 'en');
+    return accepted(text.match(/[\p{L}\p{N}]+/gu)?.length ?? 0);
   },
 });
 
-const result = await kernel.run<string, 'te' | 'en'>(
-  'content.language',
+const result = await kernel.run<string, number>(
+  'content.length',
   message,
   { priority: 5, deadlineMs: 200 },
 );
@@ -172,19 +176,19 @@ Flows declare which registered Leanlets they may invoke:
 ```ts
 import { accepted, defineFlow } from 'leanlet-ai';
 
-const preflight = defineFlow<string, { language: string; long: boolean }>({
+const preflight = defineFlow<string, { words: number; long: boolean }>({
   id: 'content.preflight',
   version: '1.0.0',
-  uses: ['content.language'],
+  uses: ['content.length'],
   async run(text, context) {
-    const language = await context.run<string, string>(
-      'content.language',
+    const words = await context.run<string, number>(
+      'content.length',
       text,
     );
 
-    if (language.status !== 'accepted') return language;
+    if (words.status !== 'accepted') return words;
     return accepted({
-      language: language.output,
+      words: words.output,
       long: text.length > 500,
     });
   },
@@ -202,6 +206,22 @@ await kernel.destroy();
 The trace records in-memory completion order, status, and timing. It is not a
 durable workflow log. The application owns thresholds, fallback, persistence,
 consent, and user-visible consequences.
+
+## Bring a custom model
+
+Use `defineModelPack()` to record immutable revision, license, providers,
+assets, and resident-memory estimates. `defineModelLeanlet()` connects the
+application's loader and inference adapter to the managed lifecycle. Leanlet
+does not download the model or choose its runtime. See the
+[custom-model guide](https://github.com/sukumarrekapalli/leanlet/blob/main/docs/CUSTOM_MODELS.md).
+
+## Define application checks
+
+Use `defineCheck()` to map application state into the narrow input of a
+registered Leanlet and turn accepted output into `pass`, `review`, or `fail`.
+`runCheck()` delegates through the kernel and preserves abstention, failure,
+timing, and provenance. See the
+[application-check guide](https://github.com/sukumarrekapalli/leanlet/blob/main/docs/CHECKS.md).
 
 ## Handle results
 

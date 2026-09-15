@@ -13,6 +13,8 @@ const sections = [
   ['context', 'Run context'],
   ['results', 'Results'],
   ['run-options', 'Run options'],
+  ['custom-models', 'Custom models'],
+  ['checks', 'Application checks'],
   ['flows', 'Flows'],
   ['events', 'Events and snapshots'],
   ['assets', 'Asset planning'],
@@ -72,14 +74,14 @@ export default function ApiReference() {
 
         <article className="docs-content api-reference">
           <section id="api-overview" className="docs-intro">
-            <div className="docs-badge">leanlet-ai · 0.3.0-beta.1</div>
+            <div className="docs-badge">Source candidate · 0.3.0-beta.4</div>
             <h1>Complete TypeScript API reference.</h1>
             <p>
               This page documents every public value and type exported by Leanlet 0.3. Start with
               <code> defineLeanlet</code> for one local capability. Add a kernel only when multiple
               capabilities need shared scheduling, policy, lifecycle, provenance, or budgets.
             </p>
-            <div className="docs-callout blue"><ShieldCheck /><div><strong>Contract status</strong><p>0.3 is a beta. The 0.2 single-capability API remains available; the kernel, flow, asset planning, and evaluation APIs are additive. Beta feedback may still refine the managed API before a stable release.</p></div></div>
+            <div className="docs-callout blue"><ShieldCheck /><div><strong>Contract status</strong><p>0.3 is a beta. npm tag <code>next</code> currently resolves to beta.2; custom-model and application-check contracts shown here are source candidates for beta.4. The 0.2 API remains available and the managed APIs are additive.</p></div></div>
             <Code>{`npm install leanlet-ai
 
 import {
@@ -245,6 +247,20 @@ abstained(reason, candidates?): LeanletResult<never>`}</Signature>
             <p>Coalescing does not compare inputs. The application is responsible for a collision-resistant key representing all behaviorally relevant input and options. Results are shared only while the matching computation is queued or active.</p>
           </section>
 
+          <section id="custom-models">
+            <p className="docs-kicker">Custom adapter</p><h2>defineModelPack / defineModelLeanlet</h2>
+            <Signature>{`defineModelPack(pack: LeanletModelPack): LeanletModelPack
+defineModelLeanlet<Input, Output, State>(definition: ModelLeanletDefinition<Input, Output, State>): DefinedModelLeanlet<Input, Output, State>`}</Signature>
+            <p><code>LeanletModelPack</code> declares model ID, immutable revision, format, license, providers, assets, and estimated resident bytes, with optional source, languages, parameter count, quantization, and context length. <code>defineModelLeanlet</code> maps its load/run/dispose adapter into the managed kernel contract. Metadata is frozen; the adapter still owns runtime correctness and asset verification.</p>
+          </section>
+
+          <section id="checks">
+            <p className="docs-kicker">Delegated policy</p><h2>defineCheck / runCheck</h2>
+            <Signature>{`defineCheck<Subject, LeanletInput, LeanletOutput, Evidence>(definition): DefinedLeanletCheck
+runCheck(kernel, check, subject, options?): Promise<LeanletCheckResult<Evidence>>`}</Signature>
+            <p>A check declares <code>id</code>, <code>version</code>, target <code>leanletId</code>, <code>prepare(subject)</code>, and <code>decide(output, subject)</code>. Accepted output becomes a completed <code>pass</code>, <code>review</code>, or <code>fail</code> decision. Leanlet abstention and failure remain distinct results; kernel timing and provenance are preserved.</p>
+          </section>
+
           <section id="flows">
             <p className="docs-kicker">Composition</p><h2>defineFlow</h2>
             <Signature>{`defineFlow<Input, Output>(definition: LeanletFlowDefinition<Input, Output>): LeanletFlow<Input, Output>`}</Signature>
@@ -345,9 +361,9 @@ abstained(reason, candidates?): LeanletResult<never>`}</Signature>
           <section id="exports">
             <p className="docs-kicker">Package index</p><h2>All public exports</h2>
             <div className="export-grid">
-              <article><strong>Values</strong><code>VisionLeanlet</code><code>LeanletError</code><code>LeanletKernel</code><code>accepted</code><code>abstained</code><code>createLeanletKernel</code><code>defineLeanlet</code><code>defineFlow</code><code>planLeanletAssets</code><code>evaluateClassification</code><code>LEANLET_MODELS</code><code>getLeanletModel</code><code>DEFAULT_PRODUCT_CATEGORIES</code><code>DEFAULT_CATEGORY_PROMPTS</code></article>
+              <article><strong>Values</strong><code>VisionLeanlet</code><code>LeanletError</code><code>LeanletKernel</code><code>accepted</code><code>abstained</code><code>createLeanletKernel</code><code>defineLeanlet</code><code>defineFlow</code><code>defineModelPack</code><code>defineModelLeanlet</code><code>defineCheck</code><code>runCheck</code><code>planLeanletAssets</code><code>evaluateClassification</code><code>LEANLET_MODELS</code><code>getLeanletModel</code><code>DEFAULT_PRODUCT_CATEGORIES</code><code>DEFAULT_CATEGORY_PROMPTS</code></article>
               <article><strong>Kernel types</strong><code>KernelLeanletDefinition</code><code>KernelRunOptions</code><code>LeanletManifest</code><code>LeanletAsset</code><code>LeanletResult</code><code>LeanletRunContext</code><code>LeanletTiming</code><code>LeanletProvenance</code><code>LeanletKernelOptions</code><code>LeanletKernelBudget</code><code>LeanletKernelPolicy</code><code>LeanletKernelEvent</code><code>LeanletKernelSnapshot</code><code>LeanletExecutionProvider</code><code>LeanletErrorCode</code></article>
-              <article><strong>Flow and utility types</strong><code>LeanletFlow</code><code>LeanletFlowContext</code><code>LeanletFlowDefinition</code><code>LeanletFlowResult</code><code>LeanletFlowTrace</code><code>LeanletAssetPlan</code><code>ClassificationEvaluationCase</code><code>ClassificationEvaluationMetrics</code></article>
+              <article><strong>Flow, model, check, and utility types</strong><code>LeanletFlow</code><code>LeanletFlowContext</code><code>LeanletFlowDefinition</code><code>LeanletFlowResult</code><code>LeanletFlowTrace</code><code>LeanletModelPack</code><code>ModelLeanletDefinition</code><code>DefinedModelLeanlet</code><code>LeanletCheckDefinition</code><code>LeanletCheckDecision</code><code>LeanletCheckResult</code><code>LeanletCheckVerdict</code><code>DefinedLeanletCheck</code><code>LeanletAssetPlan</code><code>ClassificationEvaluationCase</code><code>ClassificationEvaluationMetrics</code></article>
               <article><strong>Simple and vision types</strong><code>LeanletDefinition</code><code>ScopedLeanlet</code><code>LeanletModelDefinition</code><code>LeanletModelId</code><code>VisionLeanletOptions</code><code>ClassifyOptions</code><code>CategoryResult</code><code>Prediction</code><code>LeanletStatus</code><code>LeanletEvent</code></article>
             </div>
           </section>

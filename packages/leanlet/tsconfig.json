@@ -20,6 +20,8 @@
     "src/asset-plan.ts",
     "src/evaluation.ts",
     "src/models.ts",
+    "src/model-pack.ts",
+    "src/check.ts",
     "src/types.ts",
     "src/scoped-leanlet.ts",
     "src/vision-leanlet.ts"

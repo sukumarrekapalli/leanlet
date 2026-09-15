@@ -1,10 +1,11 @@
 # Migrating from Leanlet 0.2 to 0.3
 
-The public stable release is 0.2.0. Version 0.3.0-beta.3 is a prerelease. Test
+The public stable release is 0.2.0. Version 0.3.0-beta.2 is currently published
+under the `next` tag. Test
 it with an exact pin:
 
 ```bash
-npm install leanlet-ai@0.3.0-beta.3 --save-exact
+npm install leanlet-ai@0.3.0-beta.2 --save-exact
 ```
 
 ## Compatibility summary
@@ -14,7 +15,8 @@ npm install leanlet-ai@0.3.0-beta.3 --save-exact
 - Existing model profile IDs remain.
 - `CategoryResult.score` is new; `confidence` remains as a deprecated alias.
 - `LeanletEvent` adds `cancelled`. Update exhaustive TypeScript switches.
-- Kernel, flow, asset-planning, and evaluation APIs are additive and opt-in.
+- Kernel, flow, asset-planning, evaluation, custom-model, and application-check
+  APIs are additive and opt-in.
 
 Existing 0.2-style single-capability code can remain unchanged. Add a kernel
 only when several capabilities need shared resource, policy, lifecycle,

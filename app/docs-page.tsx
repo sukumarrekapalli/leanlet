@@ -26,6 +26,8 @@ const sections = [
   ['first-leanlet', 'First Leanlet'],
   ['kernel', 'Kernel'],
   ['leanlets', 'Leanlet definitions'],
+  ['custom-models', 'Custom models'],
+  ['checks', 'Application checks'],
   ['flows', 'Flows'],
   ['scheduling', 'Scheduling'],
   ['results', 'Results and errors'],
@@ -461,6 +463,57 @@ const result = await kernel.run<string, DetectedLanguage>('language.route', inpu
                 </span>
               </div>
             </div>
+          </section>
+
+          <section id="custom-models">
+            <p className="docs-kicker">Bring your runtime</p>
+            <h2>Declare a custom model without hiding its cost</h2>
+            <Code>{`import { defineModelLeanlet, defineModelPack } from 'leanlet-ai/kernel';
+
+const pack = defineModelPack({
+  id: 'acme/writer-360m', revision: 'immutable-revision', format: 'onnx',
+  license: 'Apache-2.0', providers: ['webgpu'], quantization: 'q4f16',
+  assets: [{ path: '/models/writer.onnx', bytes: 272_000_000, sha256: '…' }],
+  estimatedResidentBytes: 720 * 1024 * 1024,
+});
+
+kernel.register(defineModelLeanlet({
+  id: 'writer.rewrite', version: '1.0.0', task: 'bounded-rewrite', model: pack,
+  load: (model, context) => loadWriter(model, context.provider),
+  run: (input, runtime, context) => runtime.run(input, context.signal),
+  dispose: (runtime) => runtime.dispose(),
+}));`}</Code>
+            <p>
+              The model pack records immutable identity, assets, license,
+              providers, and declared memory. Your adapter owns download and
+              inference mechanics; the kernel owns admission, lifecycle,
+              scheduling, cancellation, diagnostics, and provenance.
+            </p>
+          </section>
+
+          <section id="checks">
+            <p className="docs-kicker">Product policy</p>
+            <h2>Define a check; delegate its computation</h2>
+            <Code>{`import { defineCheck, runCheck } from 'leanlet-ai/kernel';
+
+const toneCheck = defineCheck({
+  id: 'editor.tone', version: '1.0.0', leanletId: 'writer.tone-model',
+  prepare: (draft: Draft) => draft.body,
+  decide: (signal, draft) => ({
+    verdict: signal.score >= draft.threshold ? 'pass' : 'review',
+    message: 'Tone signal evaluated', evidence: signal, score: signal.score,
+  }),
+});
+
+const result = await runCheck(kernel, toneCheck, draft, {
+  deadlineMs: 1_500, signal: navigationSignal,
+});`}</Code>
+            <p>
+              A completed check returns <code>pass</code>, <code>review</code>,
+              or <code>fail</code>. Underlying abstention and failure are never
+              silently promoted to pass. Timing and Leanlet provenance remain
+              attached so interfaces and policy can explain the result.
+            </p>
           </section>
 
           <section id="flows">

@@ -10,6 +10,8 @@ export { planLeanletAssets } from './asset-plan.js';
 export { evaluateClassification } from './evaluation.js';
 export { defineFlow } from './flow.js';
 export { defineLeanlet } from './scoped-leanlet.js';
+export { defineModelLeanlet, defineModelPack } from './model-pack.js';
+export { defineCheck, runCheck } from './check.js';
 export {
   DEFAULT_CATEGORY_PROMPTS,
   DEFAULT_PRODUCT_CATEGORIES,
@@ -56,3 +58,15 @@ export type {
   VisionLeanletOptions,
 } from './types.js';
 export type { LeanletDefinition, ScopedLeanlet } from './scoped-leanlet.js';
+export type {
+  DefinedModelLeanlet,
+  LeanletModelPack,
+  ModelLeanletDefinition,
+} from './model-pack.js';
+export type {
+  DefinedLeanletCheck,
+  LeanletCheckDecision,
+  LeanletCheckDefinition,
+  LeanletCheckResult,
+  LeanletCheckVerdict,
+} from './check.js';

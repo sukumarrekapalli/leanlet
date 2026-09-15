@@ -24,9 +24,9 @@ Leanlet does not turn every interaction into an AI call. Its purpose is to make
 narrow local intelligence predictable enough to ship where it provides a
 measurable product benefit.
 
-> **Release status:** `0.2.0` is the public stable line. The managed kernel and
-> flow APIs are available in `0.3.0-beta.3` under npm tag `next`. The 0.2
-> single-capability API remains supported in the beta. See the
+> **Release status:** `0.2.0` is the public stable line and `0.3.0-beta.2` is
+> currently published under npm tag `next`. This checkout is preparing
+> `0.3.0-beta.4`; the 0.2 single-capability API remains supported. See the
 > [migration guide](https://sukumarrekapalli.github.io/leanlet/docs/migrate/).
 
 ## Contents
@@ -40,6 +40,8 @@ measurable product benefit.
 - [Results and uncertainty](#results-and-uncertainty)
 - [Browser vision](#browser-vision)
 - [Performance model](#performance-model)
+- [Custom model packs](#custom-model-packs)
+- [Application checks](#application-checks)
 - [Documentation map](#documentation-map)
 - [Compatibility and limitations](#compatibility-and-limitations)
 - [Release roadmap](#release-roadmap)
@@ -69,6 +71,23 @@ Inputs can remain in the browser when every selected capability and asset path
 is local. Leanlet itself adds no inference endpoint or telemetry. Application
 analytics, remote fallbacks, and custom capability code remain separate trust
 boundaries owned by the application.
+
+## Custom model packs
+
+`defineModelPack()` and `defineModelLeanlet()` let an application bring a
+versioned browser model and its own runtime adapter while reusing Leanlet's
+loading, scheduling, policy, memory-budget, provenance, and disposal contract.
+The framework records model assets and constraints; it does not hide download
+size, guarantee quality, or force a particular inference engine. See the
+[custom model guide](docs/CUSTOM_MODELS.md).
+
+## Application checks
+
+`defineCheck()` describes what an application needs to decide;
+`runCheck()` delegates its computation to a registered Leanlet through the
+kernel. This keeps product policy separate from model execution while retaining
+deadlines, cancellation, abstention, timing, and provenance. Checks may target
+model-backed or deterministic Leanlets. See [Application checks](docs/CHECKS.md).
 
 ## Install
 
@@ -357,8 +376,10 @@ the included `npm run benchmark:kernel` synthetic scheduler benchmark.
 | [Adapter authoring](docs/ADAPTERS.md)                                           | Requirements for wrapping a model, worker, WASM runtime, index, or algorithm                                    |
 | [Language adapter](docs/LANGUAGE_MODELS.md)                                     | Worker lifecycle, selectable ELD profiles, reliability semantics, coverage, and production validation          |
 | [Performance](docs/PERFORMANCE.md)                                              | Measurement model, coalescing, budgets, and benchmark interpretation                                            |
-| [Release notes](docs/releases/0.3.0-beta.3.md)                                  | Current package split, compatibility, and installation changes                                                  |
-| [Next release](docs/NEXT_RELEASE.md)                                            | Current beta.4 engineering priorities and stable promotion gates                                                |
+| [Custom models](docs/CUSTOM_MODELS.md)                                          | Model-pack metadata, adapter lifecycle, assets, providers, and limitations                                       |
+| [Application checks](docs/CHECKS.md)                                            | Typed checks delegated to registered Leanlets with explicit verdicts and provenance                             |
+| [Release notes](docs/releases/0.3.0-beta.4.md)                                  | Custom-model and application-check contracts, compatibility, and limitations                                    |
+| [Next release](docs/NEXT_RELEASE.md)                                            | Current beta.5 engineering priorities and stable promotion gates                                                |
 | [Security policy](SECURITY.md)                                                  | Vulnerability reporting and framework security boundaries                                                       |
 | [Contributing](CONTRIBUTING.md)                                                 | Repository setup, checks, and contribution expectations                                                         |
 
@@ -383,7 +404,7 @@ and the [full limitations](https://sukumarrekapalli.github.io/leanlet/docs/#limi
 
 ## Release roadmap
 
-The next planned prerelease is `0.3.0-beta.4`, centered on:
+The next planned prerelease after this candidate is `0.3.0-beta.5`, centered on:
 
 1. separating the remaining asset-planning and evaluation contracts into focused entries;
 2. an adapter conformance suite and manifest JSON Schema;

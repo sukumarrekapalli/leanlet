@@ -7,6 +7,8 @@ export {
 } from './core.js';
 export { defineFlow } from './flow.js';
 export { defineLeanlet } from './scoped-leanlet.js';
+export { defineModelLeanlet, defineModelPack } from './model-pack.js';
+export { defineCheck, runCheck } from './check.js';
 export type {
   KernelLeanletDefinition,
   KernelRunOptions,
@@ -32,3 +34,15 @@ export type {
   LeanletFlowTrace,
 } from './flow.js';
 export type { LeanletDefinition, ScopedLeanlet } from './scoped-leanlet.js';
+export type {
+  DefinedModelLeanlet,
+  LeanletModelPack,
+  ModelLeanletDefinition,
+} from './model-pack.js';
+export type {
+  DefinedLeanletCheck,
+  LeanletCheckDecision,
+  LeanletCheckDefinition,
+  LeanletCheckResult,
+  LeanletCheckVerdict,
+} from './check.js';
