@@ -134,5 +134,48 @@ void test('route returns an inspectable abstention when no candidate is compatib
   assert.equal(outcome.result.status, 'abstained');
   assert.equal(outcome.result.reason, 'unsupported-input');
   assert.equal(outcome.attempts[0].status, 'incompatible');
+  assert.equal(outcome.fallbackUsed, false);
   await kernel.destroy();
+});
+
+void test('route validates and deeply freezes candidate policy', () => {
+  assert.throws(
+    () =>
+      defineCapabilityRoute({
+        id: 'contradiction',
+        candidates: [
+          {
+            leanletId: 'bad',
+            requires: { webgpu: false, webgpuFeatures: ['shader-f16'] },
+          },
+        ],
+      }),
+    /cannot require WebGPU features/,
+  );
+  assert.throws(
+    () =>
+      defineCapabilityRoute({
+        id: 'invalid-status',
+        candidates: [
+          { leanletId: 'bad', continueOn: ['accepted'] },
+        ],
+      }),
+    /only failed and abstained/,
+  );
+
+  const features = ['shader-f16'];
+  const route = defineCapabilityRoute({
+    id: 'frozen',
+    candidates: [
+      { leanletId: 'gpu', requires: { webgpuFeatures: features } },
+    ],
+  });
+  features.push('timestamp-query');
+  assert.deepEqual(route.candidates[0].requires.webgpuFeatures, [
+    'shader-f16',
+  ]);
+  assert.equal(
+    Object.isFrozen(route.candidates[0].requires.webgpuFeatures),
+    true,
+  );
 });

@@ -53,12 +53,25 @@ export function defineCapabilityRoute(definition) {
             throw new TypeError('Capability route candidate id cannot be empty.');
         if (ids.has(candidate.leanletId))
             throw new TypeError(`Capability route candidate "${candidate.leanletId}" is duplicated.`);
+        if (candidate.requires?.webgpu === false &&
+            candidate.requires.webgpuFeatures?.length)
+            throw new TypeError(`Capability route candidate "${candidate.leanletId}" cannot require WebGPU features while requiring WebGPU to be unavailable.`);
+        if (candidate.requires?.webgpuFeatures?.some((feature) => !feature.trim()))
+            throw new TypeError('WebGPU feature names cannot be empty.');
+        if (candidate.continueOn?.some((status) => status !== 'failed' && status !== 'abstained'))
+            throw new TypeError('Capability route continueOn supports only failed and abstained.');
         ids.add(candidate.leanletId);
+        const requires = candidate.requires
+            ? Object.freeze({
+                ...candidate.requires,
+                webgpuFeatures: candidate.requires.webgpuFeatures
+                    ? Object.freeze([...candidate.requires.webgpuFeatures])
+                    : undefined,
+            })
+            : undefined;
         return Object.freeze({
             ...candidate,
-            requires: candidate.requires
-                ? Object.freeze({ ...candidate.requires })
-                : undefined,
+            requires,
             continueOn: candidate.continueOn
                 ? Object.freeze([...new Set(candidate.continueOn)])
                 : undefined,
@@ -151,7 +164,7 @@ export function defineCapabilityRoute(definition) {
             return {
                 routeId: definition.id,
                 result,
-                fallbackUsed: attempts.length > 0,
+                fallbackUsed: false,
                 capabilities,
                 attempts,
             };
