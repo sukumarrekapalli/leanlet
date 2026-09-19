@@ -6,6 +6,7 @@ export { defineFlow } from './flow.js';
 export { defineLeanlet } from './scoped-leanlet.js';
 export { defineModelLeanlet, defineModelPack } from './model-pack.js';
 export { defineCheck, runCheck } from './check.js';
+export { probeRuntimeCapabilities } from './runtime-capabilities.js';
 export { DEFAULT_CATEGORY_PROMPTS, DEFAULT_PRODUCT_CATEGORIES, LEANLET_MODELS, getLeanletModel, } from './models.js';
 export type { LeanletModelDefinition } from './models.js';
 export type { KernelLeanletDefinition, KernelRunOptions, LeanletAsset, LeanletErrorCode, LeanletExecutionProvider, LeanletKernelBudget, LeanletKernelEvent, LeanletKernelOptions, LeanletKernelPolicy, LeanletKernelSnapshot, LeanletManifest, LeanletProvenance, LeanletResult, LeanletRunContext, LeanletTiming, } from './core.js';
@@ -16,4 +17,5 @@ export type { CategoryResult, ClassifyOptions, LeanletEvent, LeanletModelId, Lea
 export type { LeanletDefinition, ScopedLeanlet } from './scoped-leanlet.js';
 export type { DefinedModelLeanlet, LeanletModelPack, ModelLeanletDefinition, } from './model-pack.js';
 export type { DefinedLeanletCheck, LeanletCheckDecision, LeanletCheckDefinition, LeanletCheckResult, LeanletCheckVerdict, } from './check.js';
+export type { LeanletRuntimeCapabilities, LeanletWebGpuUnavailableReason, RuntimeCapabilityProbeOptions, } from './runtime-capabilities.js';
 //# sourceMappingURL=index.d.ts.map

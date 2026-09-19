@@ -9,6 +9,7 @@ export { defineFlow } from './flow.js';
 export { defineLeanlet } from './scoped-leanlet.js';
 export { defineModelLeanlet, defineModelPack } from './model-pack.js';
 export { defineCheck, runCheck } from './check.js';
+export { probeRuntimeCapabilities } from './runtime-capabilities.js';
 export type {
   KernelLeanletDefinition,
   KernelRunOptions,
@@ -46,3 +47,8 @@ export type {
   LeanletCheckResult,
   LeanletCheckVerdict,
 } from './check.js';
+export type {
+  LeanletRuntimeCapabilities,
+  LeanletWebGpuUnavailableReason,
+  RuntimeCapabilityProbeOptions,
+} from './runtime-capabilities.js';
