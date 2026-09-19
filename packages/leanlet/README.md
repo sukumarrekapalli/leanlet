@@ -78,6 +78,7 @@ Angular, Vue, Svelte, or plain TypeScript. Model weights are not bundled.
 | Explicit composition of several registered capabilities | `defineFlow()`             |
 | Application-owned model and runtime                      | `defineModelLeanlet()`     |
 | Product check delegated through the kernel               | `defineCheck()` / `runCheck()` |
+| Device-aware implementation choice with explicit fallback | `defineCapabilityRoute()`  |
 | Supported image classification profiles                 | `VisionLeanlet`            |
 | Release-time asset metadata and integrity checks        | `planLeanletAssets()`      |
 | Classification quality and latency metrics              | `evaluateClassification()` |
@@ -206,6 +207,45 @@ await kernel.destroy();
 The trace records in-memory completion order, status, and timing. It is not a
 durable workflow log. The application owns thresholds, fallback, persistence,
 consent, and user-visible consequences.
+
+## Route by browser capability
+
+Use a capability route when a task has multiple registered implementations.
+The route skips implementations whose declared requirements are unavailable and
+records every decision. Fallback after execution is opt-in per candidate:
+
+```ts
+import {
+  defineCapabilityRoute,
+  probeRuntimeCapabilities,
+} from 'leanlet-ai/kernel';
+
+const route = defineCapabilityRoute<string, string>({
+  id: 'writing.generate',
+  candidates: [
+    {
+      leanletId: 'writing.webgpu',
+      requires: { webgpuFeatures: ['shader-f16'] },
+      continueOn: ['failed', 'abstained'],
+    },
+    {
+      leanletId: 'writing.wasm',
+      requires: { webAssembly: true, workers: true },
+    },
+  ],
+});
+
+const outcome = await route.run(kernel, prompt, {
+  capabilities: await probeRuntimeCapabilities(),
+  signal,
+  deadlineMs: 5_000,
+});
+```
+
+The capability profile excludes GPU vendor and adapter identity. Compatibility
+means the declared browser primitive exists; it is not a quality, memory, or
+performance guarantee. Inspect `outcome.attempts` and keep user-visible failure
+and fallback behavior explicit.
 
 ## Bring a custom model
 

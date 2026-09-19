@@ -30,6 +30,7 @@ const sections = [
   ['checks', 'Application checks'],
   ['flows', 'Flows'],
   ['scheduling', 'Scheduling'],
+  ['routing', 'Capability routing'],
   ['results', 'Results and errors'],
   ['assets', 'Assets and budgets'],
   ['vision', 'Vision runtime'],
@@ -182,7 +183,7 @@ export default function Docs() {
             </a>
           ))}
           <p>Operations</p>
-          {sections.slice(11, 18).map(([id, label]) => (
+          {sections.slice(11, 19).map(([id, label]) => (
             <a href={`#${id}`} key={id}>
               {label}
             </a>
@@ -194,7 +195,7 @@ export default function Docs() {
 
         <article className="docs-content">
           <section id="overview" className="docs-intro">
-            <div className="docs-badge">v0.3.0-beta.1 guide</div>
+            <div className="docs-badge">v0.3 beta guide</div>
             <h1>Scoped intelligence, coordinated in the browser.</h1>
             <p>
               Leanlet is a TypeScript runtime for applications that combine
@@ -590,6 +591,52 @@ const { result, trace } = await preflight.run(kernel, draft, {
               similar. Priority is numeric and descending. Equal-priority
               requests with the earliest absolute deadline run first. This
               scheduler is in-memory and scoped to one page context.
+            </p>
+          </section>
+
+          <section id="routing">
+            <p className="docs-kicker">Runtime selection</p>
+            <h2>Choose an implementation without hiding fallback</h2>
+            <p>
+              A capability route connects one bounded task to ordered
+              implementations. It can prefer a WebGPU model, use a WASM model
+              where compatible, and stop or continue according to policy the
+              application declares in advance.
+            </p>
+            <Code>{`import {
+  defineCapabilityRoute,
+  probeRuntimeCapabilities,
+} from 'leanlet-ai/kernel';
+
+const capabilities = await probeRuntimeCapabilities();
+const route = defineCapabilityRoute<string, string>({
+  id: 'writing.generate',
+  candidates: [
+    {
+      leanletId: 'writing.webgpu',
+      requires: { webgpuFeatures: ['shader-f16'] },
+      continueOn: ['failed', 'abstained'],
+    },
+    {
+      leanletId: 'writing.wasm',
+      requires: { webAssembly: true, workers: true },
+    },
+  ],
+});
+
+const outcome = await route.run(kernel, prompt, {
+  capabilities,
+  signal: navigationSignal,
+  deadlineMs: 5_000,
+});`}</Code>
+            <p>
+              Incompatible candidates are skipped with a reason. A failed or
+              abstained execution advances only when its candidate explicitly
+              lists that status in <code>continueOn</code>. The returned
+              capability profile, selected ID, and attempt list let the UI
+              explain what ran. The profile omits GPU vendor and adapter
+              identity; matching requirements indicates eligibility, not model
+              quality or a memory guarantee.
             </p>
           </section>
 

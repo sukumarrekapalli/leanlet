@@ -1,6 +1,6 @@
 # Leanlet 0.3 API reference
 
-This reference covers the local `leanlet-ai@0.3.0-beta.4` release candidate. The
+This reference covers the local `leanlet-ai@0.3.0-beta.5` release candidate. The
 [web API reference](https://sukumarrekapalli.github.io/leanlet/docs/api/)
 contains the same contract in navigable form.
 
@@ -17,6 +17,8 @@ its ONNX runtime assets from the reachable module graph.
 - Add `defineFlow` when several registered capabilities produce one result.
 - Add `defineCheck` and `runCheck` when a product check should route through a
   registered Leanlet and preserve its abstention, timing, and provenance.
+- Add `defineCapabilityRoute` when several compatible implementations need an
+  ordered, explicit fallback policy based on browser capabilities.
 
 The managed APIs are additive; a single Leanlet does not require a kernel.
 
@@ -159,6 +161,61 @@ procedure supports it.
 
 Timing contains `queuedMs`, `loadMs`, `runMs`, and `totalMs`. Provenance
 contains `leanletId`, `leanletVersion`, and `provider`.
+
+## Runtime capabilities and routes
+
+`probeRuntimeCapabilities(options?)` returns a versioned, privacy-minimal
+profile of execution primitives. It reports WebAssembly, Worker,
+SharedArrayBuffer, cross-origin isolation, WebGPU availability, and
+standardized WebGPU feature names. It deliberately omits adapter names,
+vendors, memory, and other high-entropy device identity. Probing does not load
+model assets or initialize an inference runtime.
+
+```ts
+const capabilities = await probeRuntimeCapabilities();
+
+const generation = defineCapabilityRoute<string, string>({
+  id: 'writing.generate',
+  candidates: [
+    {
+      leanletId: 'writing.webgpu',
+      requires: { webgpuFeatures: ['shader-f16'] },
+      continueOn: ['failed', 'abstained'],
+    },
+    {
+      leanletId: 'writing.wasm',
+      requires: { webAssembly: true, workers: true },
+    },
+  ],
+});
+
+const outcome = await generation.run(kernel, prompt, {
+  capabilities,
+  signal,
+  deadlineMs: 5_000,
+});
+```
+
+`LeanletRuntimeRequirements` supports `webAssembly`, `workers`,
+`sharedArrayBuffer`, `crossOriginIsolated`, `webgpu`, and `webgpuFeatures`.
+`matchesRuntimeRequirements(requirements, capabilities)` returns
+`{ compatible, missing }` for application diagnostics and setup UIs.
+
+Route candidates are evaluated in declaration order. Incompatible candidates
+are skipped. An executed candidate advances only when its `continueOn` list
+contains the returned `failed` or `abstained` status; omission stops the route.
+The route preserves the caller's cancellation signal and shares one deadline
+budget across all attempts.
+
+`CapabilityRouteResult` contains the final `result`, optional
+`selectedLeanletId`, `fallbackUsed`, the capability profile, and ordered
+`attempts`. Attempts distinguish `incompatible` skips from accepted,
+abstained, and failed executions. When no candidate is compatible, the route
+returns `unsupported-input` rather than guessing or hiding the condition.
+
+Capability matching establishes runtime eligibility only. It does not predict
+model quality, memory pressure, thermal behavior, or task fitness; those remain
+application evaluation and policy decisions.
 
 ## Application checks
 

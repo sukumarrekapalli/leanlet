@@ -26,7 +26,7 @@ measurable product benefit.
 
 > **Release status:** `0.2.0` is the public stable line and `0.3.0-beta.2` is
 > currently published under npm tag `next`. This checkout is preparing
-> `0.3.0-beta.4`; the 0.2 single-capability API remains supported. See the
+> `0.3.0-beta.5`; the 0.2 single-capability API remains supported. See the
 > [migration guide](https://sukumarrekapalli.github.io/leanlet/docs/migrate/).
 
 ## Contents
@@ -378,7 +378,7 @@ the included `npm run benchmark:kernel` synthetic scheduler benchmark.
 | [Performance](docs/PERFORMANCE.md)                                              | Measurement model, coalescing, budgets, and benchmark interpretation                                            |
 | [Custom models](docs/CUSTOM_MODELS.md)                                          | Model-pack metadata, adapter lifecycle, assets, providers, and limitations                                       |
 | [Application checks](docs/CHECKS.md)                                            | Typed checks delegated to registered Leanlets with explicit verdicts and provenance                             |
-| [Release notes](docs/releases/0.3.0-beta.4.md)                                  | Custom-model and application-check contracts, compatibility, and limitations                                    |
+| [Release notes](docs/releases/0.3.0-beta.5.md)                                  | Runtime capability profiles, explicit fallback routes, compatibility, and limitations                           |
 | [Next release](docs/NEXT_RELEASE.md)                                            | Current beta.5 engineering priorities and stable promotion gates                                                |
 | [Security policy](SECURITY.md)                                                  | Vulnerability reporting and framework security boundaries                                                       |
 | [Contributing](CONTRIBUTING.md)                                                 | Repository setup, checks, and contribution expectations                                                         |
@@ -404,15 +404,14 @@ and the [full limitations](https://sukumarrekapalli.github.io/leanlet/docs/#limi
 
 ## Release roadmap
 
-The next planned prerelease after this candidate is `0.3.0-beta.5`, centered on:
+The next planned prerelease after this candidate is centered on:
 
-1. separating the remaining asset-planning and evaluation contracts into focused entries;
-2. an adapter conformance suite and manifest JSON Schema;
-3. reusable worker-RPC and small ONNX adapter primitives;
-4. Chromium, Firefox, and WebKit integration evidence, including constrained
+1. an adapter conformance suite and manifest JSON Schema;
+2. reusable worker-RPC and small ONNX adapter primitives;
+3. Chromium, Firefox, and WebKit integration evidence, including constrained
    mobile profiles;
-5. reproducible cold/warm/responsiveness performance fixtures;
-6. React, Angular, Vue, and framework-free integration examples.
+4. reproducible cold/warm/responsiveness performance fixtures;
+5. React, Angular, Vue, and framework-free integration examples.
 
 The detailed working plan and stable promotion gates are tracked in
 [docs/NEXT_RELEASE.md](docs/NEXT_RELEASE.md). Roadmap entries are direction, not
