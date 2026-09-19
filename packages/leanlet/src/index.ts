@@ -14,6 +14,10 @@ export { defineModelLeanlet, defineModelPack } from './model-pack.js';
 export { defineCheck, runCheck } from './check.js';
 export { probeRuntimeCapabilities } from './runtime-capabilities.js';
 export {
+  defineCapabilityRoute,
+  matchesRuntimeRequirements,
+} from './capability-route.js';
+export {
   DEFAULT_CATEGORY_PROMPTS,
   DEFAULT_PRODUCT_CATEGORIES,
   LEANLET_MODELS,
@@ -76,3 +80,13 @@ export type {
   LeanletWebGpuUnavailableReason,
   RuntimeCapabilityProbeOptions,
 } from './runtime-capabilities.js';
+export type {
+  CapabilityRoute,
+  CapabilityRouteAttempt,
+  CapabilityRouteCandidate,
+  CapabilityRouteDefinition,
+  CapabilityRouteFallbackStatus,
+  CapabilityRouteResult,
+  CapabilityRouteRunOptions,
+  LeanletRuntimeRequirements,
+} from './capability-route.js';
