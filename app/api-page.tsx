@@ -13,6 +13,7 @@ const sections = [
   ['context', 'Run context'],
   ['results', 'Results'],
   ['run-options', 'Run options'],
+  ['capability-routing', 'Capability routing'],
   ['custom-models', 'Custom models'],
   ['checks', 'Application checks'],
   ['flows', 'Flows'],
@@ -74,14 +75,14 @@ export default function ApiReference() {
 
         <article className="docs-content api-reference">
           <section id="api-overview" className="docs-intro">
-            <div className="docs-badge">Source candidate · 0.3.0-beta.4</div>
+            <div className="docs-badge">Source candidate · 0.3.0-beta.5</div>
             <h1>Complete TypeScript API reference.</h1>
             <p>
               This page documents every public value and type exported by Leanlet 0.3. Start with
               <code> defineLeanlet</code> for one local capability. Add a kernel only when multiple
               capabilities need shared scheduling, policy, lifecycle, provenance, or budgets.
             </p>
-            <div className="docs-callout blue"><ShieldCheck /><div><strong>Contract status</strong><p>0.3 is a beta. npm tag <code>next</code> currently resolves to beta.2; custom-model and application-check contracts shown here are source candidates for beta.4. The 0.2 API remains available and the managed APIs are additive.</p></div></div>
+            <div className="docs-callout blue"><ShieldCheck /><div><strong>Contract status</strong><p>0.3 is a beta. Runtime capability and explicit fallback contracts shown here are source candidates for beta.5. The 0.2 API remains available and the managed APIs are additive.</p></div></div>
             <Code>{`npm install leanlet-ai
 
 import {
@@ -245,6 +246,44 @@ abstained(reason, candidates?): LeanletResult<never>`}</Signature>
               ['coalesceKey?', 'string', 'Shares queued/active computation for the same Leanlet ID and exact key.'],
             ]} />
             <p>Coalescing does not compare inputs. The application is responsible for a collision-resistant key representing all behaviorally relevant input and options. Results are shared only while the matching computation is queued or active.</p>
+          </section>
+
+          <section id="capability-routing">
+            <p className="docs-kicker">Runtime selection</p><h2>Capability routing</h2>
+            <Signature>{`probeRuntimeCapabilities(options?): Promise<LeanletRuntimeCapabilities>
+matchesRuntimeRequirements(requirements, capabilities): { compatible, missing }
+defineCapabilityRoute<Input, Output>(definition): CapabilityRoute<Input, Output>`}</Signature>
+            <p><code>probeRuntimeCapabilities</code> reports WebAssembly, Workers, SharedArrayBuffer, cross-origin isolation, WebGPU availability, and standardized WebGPU features. The profile is versioned and deliberately excludes adapter name, vendor, memory, and other high-entropy identity.</p>
+            <Fields rows={[
+              ['candidate.leanletId', 'string', 'Registered implementation to consider in declaration order.'],
+              ['candidate.requires?', 'LeanletRuntimeRequirements', 'Required execution primitives and WebGPU features.'],
+              ['candidate.continueOn?', "('abstained' | 'failed')[]", 'Statuses permitted to advance to the next compatible candidate. Omission stops.'],
+              ['options.capabilities?', 'LeanletRuntimeCapabilities', 'Pre-probed profile. Omission triggers one privacy-minimal probe.'],
+              ['options.probe?', 'RuntimeCapabilityProbeOptions', 'Injected browser surface or primitive overrides for tests and workers.'],
+            ]} />
+            <Code>{`const route = defineCapabilityRoute<string, string>({
+  id: 'writing.generate',
+  candidates: [
+    {
+      leanletId: 'writing.webgpu',
+      requires: { webgpuFeatures: ['shader-f16'] },
+      continueOn: ['failed', 'abstained'],
+    },
+    {
+      leanletId: 'writing.wasm',
+      requires: { webAssembly: true, workers: true },
+    },
+  ],
+});
+
+const outcome = await route.run(kernel, prompt, {
+  signal,
+  deadlineMs: 5_000,
+});
+
+console.table(outcome.attempts);`}</Code>
+            <p>The route skips incompatible candidates and records why. Execution advances only through an explicit <code>continueOn</code> rule. One cancellation signal and deadline budget cover every attempt. A no-match route returns <code>unsupported-input</code>; it does not guess.</p>
+            <div className="docs-callout amber"><ShieldCheck /><div><strong>Eligibility is not quality</strong><p>A matching browser primitive does not guarantee adequate memory, sustained performance, or model accuracy. Validate those properties on representative devices and data.</p></div></div>
           </section>
 
           <section id="custom-models">
