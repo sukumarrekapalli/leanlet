@@ -1,7 +1,7 @@
 # Next release working plan
 
 This is an engineering tracker, not a delivery promise. Reassess priorities
-after 0.3.0-beta.5 usage feedback and issue reports.
+after 0.3.0-beta.6 usage feedback and issue reports.
 
 ## Proposed 0.3.0-beta.6 — conformance and integration
 

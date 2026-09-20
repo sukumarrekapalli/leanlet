@@ -1,14 +1,6 @@
-# leanlet-ai
+# Leanlet
 
-**Scoped intelligence for browser applications.**
-
-For kernel and flow use without the optional vision runtime, import the focused browser entry:
-
-```ts
-import { accepted, createLeanletKernel, defineFlow } from 'leanlet-ai/kernel';
-```
-
-This entry prevents applications that do not use `VisionLeanlet` from emitting vision worker and ONNX runtime assets.
+**Build browser-native intelligence from small, independently managed capabilities.**
 
 [Website](https://sukumarrekapalli.github.io/leanlet/) ·
 [Guide](https://sukumarrekapalli.github.io/leanlet/docs/) ·
@@ -16,11 +8,23 @@ This entry prevents applications that do not use `VisionLeanlet` from emitting v
 [SafeShare reference app](https://sukumarrekapalli.github.io/leanlet/studio/) ·
 [Source](https://github.com/sukumarrekapalli/leanlet)
 
-Leanlet is a TypeScript framework for placing small, task-specific capabilities
-inside web applications. A Leanlet can wrap a compact model, Web Worker, WASM
-module, local index, statistical method, or deterministic rule. Applications
-can run one capability directly or coordinate several through a shared kernel
-with explicit scheduling, lifecycle, policy, budgets, results, and provenance.
+Leanlet is an open-source TypeScript runtime for adding bounded intelligence to
+web applications. A Leanlet can wrap a compact model, Web Worker, WASM module,
+local index, statistical method, or deterministic rule. Use one Leanlet on its
+own, or coordinate many through a shared kernel that manages scheduling,
+lifecycle, resource budgets, runtime policy, capability routing, structured
+results, and provenance.
+
+The current 0.3 beta provides:
+
+- a minimal `defineLeanlet()` lifecycle for standalone capabilities;
+- `LeanletKernel` for bounded concurrency, deadlines, cancellation, memory
+  admission, lazy loading, reuse, and disposal;
+- typed flows and application checks for composing narrow capabilities;
+- privacy-minimal browser capability probing and explicit fallback routes;
+- application-owned model packs and runtime adapters;
+- asset planning and classification evaluation utilities; and
+- an optional browser-vision adapter, isolated from the kernel-only entry.
 
 Leanlet itself adds no inference endpoint or telemetry. Inputs can remain in
 the browser when the selected capability and all of its assets are local.
@@ -28,8 +32,9 @@ Custom capability code still has the browser privileges of its host
 application; framework policy is admission control, not a JavaScript sandbox.
 
 > This README describes the `0.3` beta API. The stable `0.2` line remains
-> available under npm tag `latest`; the managed kernel and flow APIs are under
-> tag `next`. See the [migration guide](https://sukumarrekapalli.github.io/leanlet/docs/migrate/).
+> available under npm tag `latest`; the current release candidate is available
+> under `beta` and `next`. See the
+> [migration guide](https://sukumarrekapalli.github.io/leanlet/docs/migrate/).
 
 ## Contents
 
@@ -55,15 +60,15 @@ Choose the release line deliberately:
 # Stable single-capability and vision APIs
 npm install leanlet-ai
 
-# 0.3 beta: adds the kernel, flows, asset planning, and evaluation
-npm install leanlet-ai@next --save-exact
+# 0.3 beta: current managed runtime and capability-routing APIs
+npm install leanlet-ai@beta --save-exact
 ```
 
 Kernel-only applications need no model-runtime package. Applications using the
 built-in vision adapter must install its optional peer explicitly:
 
 ```bash
-npm install leanlet-ai@next @huggingface/transformers
+npm install leanlet-ai@beta @huggingface/transformers
 ```
 
 The package is ESM and framework-agnostic. It can be called from React,
@@ -128,7 +133,7 @@ await search.destroy();
 
 ## Coordinate several Leanlets
 
-Use `leanlet-ai@next` for the managed runtime:
+Use the 0.3 beta for the managed runtime:
 
 ```ts
 import { accepted, createLeanletKernel } from 'leanlet-ai';

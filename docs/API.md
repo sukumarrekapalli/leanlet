@@ -1,6 +1,6 @@
 # Leanlet 0.3 API reference
 
-This reference covers the local `leanlet-ai@0.3.0-beta.5` release candidate. The
+This reference covers the local `leanlet-ai@0.3.0-beta.6` release candidate. The
 [web API reference](https://sukumarrekapalli.github.io/leanlet/docs/api/)
 contains the same contract in navigable form.
 

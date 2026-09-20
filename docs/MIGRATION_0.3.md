@@ -1,11 +1,10 @@
 # Migrating from Leanlet 0.2 to 0.3
 
-The public stable release is 0.2.0. Version 0.3.0-beta.2 is currently published
-under the `next` tag. Test
-it with an exact pin:
+The public stable release is 0.2.0. Version 0.3.0-beta.6 is published under the
+`beta` and `next` tags. Test it with an exact pin:
 
 ```bash
-npm install leanlet-ai@0.3.0-beta.2 --save-exact
+npm install leanlet-ai@0.3.0-beta.6 --save-exact
 ```
 
 ## Compatibility summary

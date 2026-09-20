@@ -24,9 +24,9 @@ Leanlet does not turn every interaction into an AI call. Its purpose is to make
 narrow local intelligence predictable enough to ship where it provides a
 measurable product benefit.
 
-> **Release status:** `0.2.0` is the public stable line and `0.3.0-beta.2` is
-> currently published under npm tag `next`. This checkout is preparing
-> `0.3.0-beta.5`; the 0.2 single-capability API remains supported. See the
+> **Release status:** `0.2.0` is the public stable line and `0.3.0-beta.6` is
+> the current release candidate under npm tags `beta` and `next`. The 0.2
+> single-capability API remains supported. See the
 > [migration guide](https://sukumarrekapalli.github.io/leanlet/docs/migrate/).
 
 ## Contents
@@ -98,14 +98,14 @@ Choose the release line deliberately:
 npm install leanlet-ai
 
 # 0.3 beta: adds kernel, flows, asset planning, and evaluation
-npm install leanlet-ai@next --save-exact
+npm install leanlet-ai@beta --save-exact
 ```
 
 Kernel-only applications need no model backend. The built-in vision adapter has
 an optional peer that vision applications install explicitly:
 
 ```bash
-npm install leanlet-ai@next @huggingface/transformers
+npm install leanlet-ai@beta @huggingface/transformers
 ```
 
 The package is ESM and framework-agnostic. It can be called from React,
@@ -159,7 +159,7 @@ This path has no hidden global kernel, queue, worker, or network behavior.
 
 ## Managed setup: kernel and flow
 
-Use `leanlet-ai@next` when several capabilities need a shared control plane.
+Use `leanlet-ai@beta` when several capabilities need a shared control plane.
 
 ### 1. Create one kernel for the application resource boundary
 
@@ -378,7 +378,7 @@ the included `npm run benchmark:kernel` synthetic scheduler benchmark.
 | [Performance](docs/PERFORMANCE.md)                                              | Measurement model, coalescing, budgets, and benchmark interpretation                                            |
 | [Custom models](docs/CUSTOM_MODELS.md)                                          | Model-pack metadata, adapter lifecycle, assets, providers, and limitations                                       |
 | [Application checks](docs/CHECKS.md)                                            | Typed checks delegated to registered Leanlets with explicit verdicts and provenance                             |
-| [Release notes](docs/releases/0.3.0-beta.5.md)                                  | Runtime capability profiles, explicit fallback routes, compatibility, and limitations                           |
+| [Release notes](docs/releases/0.3.0-beta.6.md)                                  | Current npm presentation, release channels, compatibility, and prior runtime additions                           |
 | [Next release](docs/NEXT_RELEASE.md)                                            | Current beta.5 engineering priorities and stable promotion gates                                                |
 | [Security policy](SECURITY.md)                                                  | Vulnerability reporting and framework security boundaries                                                       |
 | [Contributing](CONTRIBUTING.md)                                                 | Repository setup, checks, and contribution expectations                                                         |

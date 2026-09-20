@@ -1,7 +1,7 @@
 {
   "name": "leanlet-ai",
-  "version": "0.3.0-beta.5",
-  "description": "Coordinate bounded, task-specific intelligence inside web applications.",
+  "version": "0.3.0-beta.6",
+  "description": "A TypeScript runtime for composing scoped, capability-aware intelligence in browser applications.",
   "type": "module",
   "license": "Apache-2.0",
   "author": "sukumar09",

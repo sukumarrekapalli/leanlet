@@ -3,6 +3,23 @@
 All notable changes are documented here. The project follows semantic
 versioning; prerelease APIs may change between beta releases.
 
+## 0.3.0-beta.6
+
+- Reframed the npm package metadata and packaged README around the complete
+  runtime rather than its original single-capability vision use case.
+- Documented standalone Leanlets, kernel orchestration, typed flows, checks,
+  custom model packs, capability-aware routing, explicit fallback, asset
+  planning, and evaluation as one coherent framework surface.
+- Aligned beta installation guidance with the `beta` and `next` npm tags.
+
+## 0.3.0-beta.5
+
+- Added privacy-minimal browser runtime capability probing.
+- Added ordered capability routes with inspectable compatibility decisions and
+  explicit per-candidate fallback statuses.
+- Preserved cancellation, deadlines, structured results, and attempt
+  provenance across routed implementations.
+
 ## 0.3.0-beta.4 (release candidate)
 
 - Added `defineModelPack()` for immutable model identity, revision, format,
