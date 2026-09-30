@@ -37,6 +37,7 @@ application; framework policy is admission control, not a JavaScript sandbox.
 - [Choose an API](#choose-an-api)
 - [Run one Leanlet](#run-one-leanlet)
 - [Coordinate several Leanlets](#coordinate-several-leanlets)
+- [Validate capability manifests](#validate-capability-manifests)
 - [Compose a flow](#compose-a-flow)
 - [Bring a custom model](#bring-a-custom-model)
 - [Define application checks](#define-application-checks)
@@ -71,17 +72,18 @@ Angular, Vue, Svelte, or plain TypeScript. Model weights are not bundled.
 
 ## Choose an API
 
-| Need                                                    | Use                        |
-| ------------------------------------------------------- | -------------------------- |
-| One lazy capability                                     | `defineLeanlet()`          |
-| Shared scheduling, lifecycle, policy, or budgets        | `LeanletKernel`            |
-| Explicit composition of several registered capabilities | `defineFlow()`             |
-| Application-owned model and runtime                      | `defineModelLeanlet()`     |
-| Product check delegated through the kernel               | `defineCheck()` / `runCheck()` |
-| Device-aware implementation choice with explicit fallback | `defineCapabilityRoute()`  |
-| Supported image classification profiles                 | `VisionLeanlet`            |
-| Release-time asset metadata and integrity checks        | `planLeanletAssets()`      |
-| Classification quality and latency metrics              | `evaluateClassification()` |
+| Need                                                      | Use                               |
+| --------------------------------------------------------- | --------------------------------- |
+| One lazy capability                                       | `defineLeanlet()`                 |
+| Shared scheduling, lifecycle, policy, or budgets          | `LeanletKernel`                   |
+| Explicit composition of several registered capabilities   | `defineFlow()`                    |
+| Application-owned model and runtime                       | `defineModelLeanlet()`            |
+| Product check delegated through the kernel                | `defineCheck()` / `runCheck()`    |
+| Device-aware implementation choice with explicit fallback | `defineCapabilityRoute()`         |
+| Validate adapter metadata before loading                  | `validateLeanletManifest()` / CLI |
+| Supported image classification profiles                   | `VisionLeanlet`                   |
+| Release-time asset metadata and integrity checks          | `planLeanletAssets()`             |
+| Classification quality and latency metrics                | `evaluateClassification()`        |
 
 Start with `defineLeanlet()` when a global runtime would add no value. Move to
 the kernel without changing the application-level purpose of that capability
@@ -159,16 +161,30 @@ kernel.register({
   },
 });
 
-const result = await kernel.run<string, number>(
-  'content.length',
-  message,
-  { priority: 5, deadlineMs: 200 },
-);
+const result = await kernel.run<string, number>('content.length', message, {
+  priority: 5,
+  deadlineMs: 200,
+});
 ```
 
 Registration validates manifest and policy compatibility. Valid registered
 runs resolve to a structured result. Unknown IDs, a destroyed kernel, and
 invalid run options are programmer errors and throw.
+
+## Validate capability manifests
+
+Validate generated or third-party manifest JSON in CI before registration:
+
+```bash
+npx leanlet manifest validate ./leanlet-manifest.json
+```
+
+```ts
+import { validateLeanletManifest } from 'leanlet-ai/manifest';
+
+const result = validateLeanletManifest(value);
+if (!result.valid) console.error(result.issues);
+```
 
 ## Compose a flow
 
@@ -182,10 +198,7 @@ const preflight = defineFlow<string, { words: number; long: boolean }>({
   version: '1.0.0',
   uses: ['content.length'],
   async run(text, context) {
-    const words = await context.run<string, number>(
-      'content.length',
-      text,
-    );
+    const words = await context.run<string, number>('content.length', text);
 
     if (words.status !== 'accepted') return words;
     return accepted({
@@ -326,6 +339,7 @@ exact model, labels, inputs, browsers, and target devices before release.
 | Results            | `accepted`, `abstained`, `LeanletResult`, `LeanletError`          |
 | Composition        | `defineFlow`, `LeanletFlow`, `LeanletFlowTrace`                   |
 | Policy and budgets | `LeanletManifest`, `LeanletKernelPolicy`, `LeanletKernelBudget`   |
+| Manifest tooling   | `validateLeanletManifest`, `parseLeanletManifest`, JSON Schema    |
 | Runtime inspection | `LeanletKernelEvent`, `LeanletKernelSnapshot`                     |
 | Release evidence   | `planLeanletAssets`, `evaluateClassification`                     |
 | Browser vision     | `VisionLeanlet`, `LEANLET_MODELS`, `LeanletModelId`               |
@@ -361,8 +375,9 @@ cancelling work needed by others. Results are not retained after settlement.
 | [SafeShare](https://sukumarrekapalli.github.io/leanlet/studio/)                                      | Working multi-Leanlet browser reference application                   |
 | [Architecture](https://github.com/sukumarrekapalli/leanlet/blob/main/docs/ARCHITECTURE.md)           | Ownership, execution, scheduling, lifecycle, and security boundaries  |
 | [Adapter authoring](https://github.com/sukumarrekapalli/leanlet/blob/main/docs/ADAPTERS.md)          | Contract for models, workers, WASM, indexes, and algorithms           |
+| [Manifest validation](https://github.com/sukumarrekapalli/leanlet/blob/main/docs/MANIFESTS.md)       | JSON Schema, runtime parser, CLI validation, and CI usage             |
 | [Performance](https://github.com/sukumarrekapalli/leanlet/blob/main/docs/PERFORMANCE.md)             | Measurement, budgets, coalescing, and benchmark interpretation        |
-| [Release notes](https://github.com/sukumarrekapalli/leanlet/blob/main/docs/releases/0.3.0-beta.1.md) | Beta changes and known constraints                                    |
+| [Release notes](https://github.com/sukumarrekapalli/leanlet/blob/main/docs/releases/0.3.0-beta.6.md) | Manifest governance and validation tooling                            |
 | [Next release](https://github.com/sukumarrekapalli/leanlet/blob/main/docs/NEXT_RELEASE.md)           | Engineering priorities and stable promotion gates                     |
 
 ## Compatibility and limits

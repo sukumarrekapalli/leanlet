@@ -163,7 +163,9 @@ async function validateManifest(file) {
     process.exitCode = 1;
     return;
   }
-  console.log(`Valid Leanlet manifest: ${result.manifest.id}@${result.manifest.version}`);
+  console.log(
+    `Valid Leanlet manifest: ${result.manifest.id}@${result.manifest.version}`,
+  );
 }
 
 async function printManifestSchema() {

@@ -945,7 +945,7 @@ export default function Home() {
             <div className="install-command">
               <span>$</span>
               <code>npm install leanlet-ai</code>
-              <span>next · beta.2</span>
+              <span>next · beta.6</span>
             </div>
             <pre>
               <code>
@@ -1073,7 +1073,7 @@ export default function Home() {
             >
               <GitFork /> Open source
             </a>
-            <span>Apache-2.0 · stable 0.2 · next beta.2</span>
+            <span>Apache-2.0 · stable 0.2 · next beta.6</span>
           </div>
         </div>
         <div className="shell footer-bottom">

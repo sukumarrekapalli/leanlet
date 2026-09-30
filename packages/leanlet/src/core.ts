@@ -297,12 +297,16 @@ export class LeanletKernel {
       !Number.isFinite(this.budget.maxResidentBytes) ||
       this.budget.maxResidentBytes < 0
     )
-      throw new RangeError('maxResidentBytes must be a finite, non-negative number.');
+      throw new RangeError(
+        'maxResidentBytes must be a finite, non-negative number.',
+      );
     if (
       !Number.isFinite(this.budget.defaultDeadlineMs) ||
       this.budget.defaultDeadlineMs < 1
     )
-      throw new RangeError('defaultDeadlineMs must be a finite, positive number.');
+      throw new RangeError(
+        'defaultDeadlineMs must be a finite, positive number.',
+      );
   }
 
   register<Input, Output, State>(

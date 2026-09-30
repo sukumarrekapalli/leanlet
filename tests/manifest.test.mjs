@@ -1,8 +1,10 @@
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import {
   LeanletManifestValidationError,
   createLeanletKernel,
+  leanletManifestSchema,
   parseLeanletManifest,
   validateLeanletManifest,
 } from '../packages/leanlet/dist/kernel.js';
@@ -30,6 +32,16 @@ void test('manifest validator accepts the public contract without loading code',
   assert.equal(result.manifest, manifest);
   assert.deepEqual(result.issues, []);
   assert.equal(parseLeanletManifest(manifest), manifest);
+});
+
+void test('runtime schema and shipped JSON schema are identical', async () => {
+  const shipped = JSON.parse(
+    await readFile(
+      'packages/leanlet/schemas/leanlet-manifest-v1.schema.json',
+      'utf8',
+    ),
+  );
+  assert.deepEqual(shipped, leanletManifestSchema);
 });
 
 void test('manifest validator returns structured paths for every defect', () => {

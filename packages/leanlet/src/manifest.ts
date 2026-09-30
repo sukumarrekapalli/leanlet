@@ -1,7 +1,4 @@
-import type {
-  LeanletExecutionProvider,
-  LeanletManifest,
-} from './core.js';
+import type { LeanletExecutionProvider, LeanletManifest } from './core.js';
 
 export const LEANLET_MANIFEST_SCHEMA_VERSION = 1 as const;
 
@@ -62,13 +59,7 @@ export const leanletManifestSchema = Object.freeze({
       minItems: 1,
       uniqueItems: true,
       items: {
-        enum: [
-          'javascript',
-          'wasm-single',
-          'wasm-threaded',
-          'webgpu',
-          'webnn',
-        ],
+        enum: ['javascript', 'wasm-single', 'wasm-threaded', 'webgpu', 'webnn'],
       },
     },
     network: {
@@ -107,6 +98,16 @@ export class LeanletManifestValidationError extends TypeError {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function describe(value: unknown) {
+  if (typeof value === 'string') return value;
+  if (value === undefined) return 'undefined';
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return typeof value;
+  }
 }
 
 function addRequiredString(
@@ -217,13 +218,12 @@ export function validateLeanletManifest(
 
   if (
     value.network !== undefined &&
-    (typeof value.network !== 'string' ||
-      !NETWORK_CLASSES.has(value.network))
+    (typeof value.network !== 'string' || !NETWORK_CLASSES.has(value.network))
   )
     issues.push({
       path: '/network',
       code: 'unsupported-value',
-      message: `Leanlet manifest declares an unknown network class: ${String(value.network)}.`,
+      message: `Leanlet manifest declares an unknown network class: ${describe(value.network)}.`,
     });
 
   if (
@@ -285,14 +285,9 @@ export function validateLeanletManifest(
         issues.push({
           path: `${base}/bytes`,
           code: 'invalid-number',
-          message: `Leanlet manifest asset "${String(asset.path ?? '')}" bytes must be finite and non-negative.`,
+          message: `Leanlet manifest asset "${describe(asset.path ?? '')}" bytes must be finite and non-negative.`,
         });
-      addOptionalString(
-        asset.sha256,
-        `${base}/sha256`,
-        'Asset sha256',
-        issues,
-      );
+      addOptionalString(asset.sha256, `${base}/sha256`, 'Asset sha256', issues);
       addOptionalString(
         asset.license,
         `${base}/license`,

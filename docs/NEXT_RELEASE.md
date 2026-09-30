@@ -1,9 +1,21 @@
 # Next release working plan
 
 This is an engineering tracker, not a delivery promise. Reassess priorities
-after 0.3.0-beta.5 usage feedback and issue reports.
+after each prerelease using integration evidence and issue reports.
 
-## Proposed 0.3.0-beta.6 — conformance and integration
+## Implemented in 0.3.0-beta.6 — manifest governance
+
+- public side-effect-free manifest validation with structured diagnostics;
+- one versioned JSON Schema shipped as code and a raw package artifact;
+- kernel registration, application parsing, and CLI validation sharing the
+  same implementation;
+- CI-friendly commands with deterministic exit status;
+- compatibility notes for duplicate providers and asset paths.
+
+This establishes the contract needed by the adapter conformance kit. It does
+not by itself prove adapter lifecycle behavior or browser compatibility.
+
+## Proposed 0.3.0-beta.7 — conformance and integration
 
 ### Milestone 1 — dependency-light core
 
@@ -20,8 +32,7 @@ tests for existing imports, and an upgrade note that includes rollback.
 
 - Define a conformance suite for shared loading, cancellation, deadlines,
   disposal, events, provenance, failure, and abstention.
-- Publish the capability-manifest JSON Schema plus validation tooling suitable
-  for local development and CI.
+- Use the published manifest validator as the first conformance gate.
 - Add framework-owned worker-RPC and small ONNX-session primitives so adapter
   authors do not repeat request, cancellation, and lifecycle glue.
 
