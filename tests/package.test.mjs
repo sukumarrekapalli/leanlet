@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { execFile } from 'node:child_process';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { promisify } from 'node:util';
 import test from 'node:test';
 
@@ -42,4 +45,58 @@ void test('asset CLI lists every supported profile', async () => {
     'mobilenet-v4-small',
   ])
     assert.match(stdout, new RegExp(`^${profile}\\s`, 'm'));
+});
+
+void test('manifest CLI validates files and exposes the shipped schema', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'leanlet-manifest-'));
+  try {
+    const valid = join(directory, 'valid.json');
+    const invalid = join(directory, 'invalid.json');
+    await writeFile(
+      valid,
+      JSON.stringify({
+        id: 'text.summary',
+        version: '1.0.0',
+        task: 'summary',
+        providers: ['javascript'],
+      }),
+    );
+    await writeFile(
+      invalid,
+      JSON.stringify({ id: '', providers: ['remote-api'] }),
+    );
+
+    const accepted = await exec(process.execPath, [
+      'packages/leanlet/bin/leanlet.mjs',
+      'manifest',
+      'validate',
+      valid,
+    ]);
+    assert.match(accepted.stdout, /text\.summary@1\.0\.0/);
+
+    await assert.rejects(
+      exec(process.execPath, [
+        'packages/leanlet/bin/leanlet.mjs',
+        'manifest',
+        'validate',
+        invalid,
+      ]),
+      (error) => {
+        assert.equal(error.code, 1);
+        assert.match(error.stderr, /\/version \[required\]/);
+        assert.match(error.stderr, /\/providers\/0 \[unsupported-value\]/);
+        return true;
+      },
+    );
+
+    const schema = await exec(process.execPath, [
+      'packages/leanlet/bin/leanlet.mjs',
+      'manifest',
+      'schema',
+    ]);
+    const parsed = JSON.parse(schema.stdout);
+    assert.deepEqual(parsed.required, ['id', 'version', 'task', 'providers']);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
 });
