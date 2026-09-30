@@ -5,4 +5,5 @@ export { defineModelLeanlet, defineModelPack } from './model-pack.js';
 export { defineCheck, runCheck } from './check.js';
 export { probeRuntimeCapabilities } from './runtime-capabilities.js';
 export { defineCapabilityRoute, matchesRuntimeRequirements, } from './capability-route.js';
+export { LEANLET_MANIFEST_SCHEMA_VERSION, LeanletManifestValidationError, leanletManifestSchema, parseLeanletManifest, validateLeanletManifest, } from './manifest.js';
 //# sourceMappingURL=kernel.js.map

@@ -24,6 +24,7 @@
     "src/check.ts",
     "src/runtime-capabilities.ts",
     "src/capability-route.ts",
+    "src/manifest.ts",
     "src/types.ts",
     "src/scoped-leanlet.ts",
     "src/vision-leanlet.ts"

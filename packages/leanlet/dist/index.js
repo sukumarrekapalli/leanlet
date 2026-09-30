@@ -8,5 +8,6 @@ export { defineModelLeanlet, defineModelPack } from './model-pack.js';
 export { defineCheck, runCheck } from './check.js';
 export { probeRuntimeCapabilities } from './runtime-capabilities.js';
 export { defineCapabilityRoute, matchesRuntimeRequirements, } from './capability-route.js';
+export { LEANLET_MANIFEST_SCHEMA_VERSION, LeanletManifestValidationError, leanletManifestSchema, parseLeanletManifest, validateLeanletManifest, } from './manifest.js';
 export { DEFAULT_CATEGORY_PROMPTS, DEFAULT_PRODUCT_CATEGORIES, LEANLET_MODELS, getLeanletModel, } from './models.js';
 //# sourceMappingURL=index.js.map
