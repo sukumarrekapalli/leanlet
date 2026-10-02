@@ -14,6 +14,13 @@ export {
   defineCapabilityRoute,
   matchesRuntimeRequirements,
 } from './capability-route.js';
+export {
+  LEANLET_MANIFEST_SCHEMA_VERSION,
+  LeanletManifestValidationError,
+  leanletManifestSchema,
+  parseLeanletManifest,
+  validateLeanletManifest,
+} from './manifest.js';
 export type {
   KernelLeanletDefinition,
   KernelRunOptions,
@@ -66,3 +73,8 @@ export type {
   CapabilityRouteRunOptions,
   LeanletRuntimeRequirements,
 } from './capability-route.js';
+export type {
+  LeanletManifestValidationIssue,
+  LeanletManifestValidationIssueCode,
+  LeanletManifestValidationResult,
+} from './manifest.js';

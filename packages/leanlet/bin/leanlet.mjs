@@ -2,7 +2,7 @@
 
 import { createReadStream, createWriteStream } from 'node:fs';
 import { createHash } from 'node:crypto';
-import { mkdir, rename, unlink, copyFile } from 'node:fs/promises';
+import { copyFile, mkdir, readFile, rename, unlink } from 'node:fs/promises';
 import { dirname, join, parse, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -137,9 +137,43 @@ function usage() {
 Usage:
   leanlet models list
   leanlet models add <profile> [--dir public/leanlet]
+  leanlet manifest validate <manifest.json>
+  leanlet manifest schema
 
 Model assets retain their upstream licenses. Review each model license before
 redistributing the generated public directory.`);
+}
+
+async function validateManifest(file) {
+  const target = resolve(file);
+  let value;
+  try {
+    value = JSON.parse(await readFile(target, 'utf8'));
+  } catch (error) {
+    throw new Error(
+      `Cannot read manifest JSON at ${target}: ${error instanceof Error ? error.message : String(error)}`,
+    );
+  }
+  const { validateLeanletManifest } = await import('../dist/manifest.js');
+  const result = validateLeanletManifest(value);
+  if (!result.valid) {
+    console.error(`Invalid Leanlet manifest: ${target}`);
+    for (const issue of result.issues)
+      console.error(`  ${issue.path || '/'} [${issue.code}] ${issue.message}`);
+    process.exitCode = 1;
+    return;
+  }
+  console.log(
+    `Valid Leanlet manifest: ${result.manifest.id}@${result.manifest.version}`,
+  );
+}
+
+async function printManifestSchema() {
+  const schema = new URL(
+    '../schemas/leanlet-manifest-v1.schema.json',
+    import.meta.url,
+  );
+  process.stdout.write(await readFile(schema, 'utf8'));
 }
 
 async function download(url, target, expectedHash) {
@@ -217,7 +251,11 @@ async function addModel(profile, targetRoot) {
 }
 
 const args = process.argv.slice(2);
-if (args[0] !== 'models') {
+if (args[0] === 'manifest' && args[1] === 'validate' && args[2])
+  await validateManifest(args[2]);
+else if (args[0] === 'manifest' && args[1] === 'schema')
+  await printManifestSchema();
+else if (args[0] !== 'models') {
   usage();
   process.exitCode = args.length ? 1 : 0;
 } else if (args[1] === 'list')

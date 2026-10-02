@@ -60,6 +60,20 @@ export const detector: KernelLeanletDefinition<number[], boolean, Detector> = {
 
 ## Adapter conformance tests
 
+Validate the adapter manifest before lifecycle tests:
+
+```bash
+npx leanlet manifest validate ./leanlet-manifest.json
+```
+
+Use the identical runtime contract for generated metadata:
+
+```ts
+import { parseLeanletManifest } from 'leanlet-ai/manifest';
+
+const manifest = parseLeanletManifest(generatedJson);
+```
+
 At minimum, test lazy single loading, repeated runtime reuse, concurrent runs,
 pre-aborted input, mid-run cancellation, deadline behavior, load failure,
 run failure, disposal, use after kernel destruction, declared budget rejection,

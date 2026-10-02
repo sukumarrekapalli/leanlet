@@ -24,9 +24,8 @@ Leanlet does not turn every interaction into an AI call. Its purpose is to make
 narrow local intelligence predictable enough to ship where it provides a
 measurable product benefit.
 
-> **Release status:** `0.2.0` is the public stable line and `0.3.0-beta.2` is
-> currently published under npm tag `next`. This checkout is preparing
-> `0.3.0-beta.5`; the 0.2 single-capability API remains supported. See the
+> **Release status:** `0.2.0` is the public stable line. This checkout prepares
+> `0.3.0-beta.6` for the npm `next` tag; the 0.2 single-capability API remains supported. See the
 > [migration guide](https://sukumarrekapalli.github.io/leanlet/docs/migrate/).
 
 ## Contents
@@ -42,6 +41,7 @@ measurable product benefit.
 - [Performance model](#performance-model)
 - [Custom model packs](#custom-model-packs)
 - [Application checks](#application-checks)
+- [Manifest validation](#manifest-validation)
 - [Documentation map](#documentation-map)
 - [Compatibility and limitations](#compatibility-and-limitations)
 - [Release roadmap](#release-roadmap)
@@ -89,6 +89,29 @@ kernel. This keeps product policy separate from model execution while retaining
 deadlines, cancellation, abstention, timing, and provenance. Checks may target
 model-backed or deterministic Leanlets. See [Application checks](docs/CHECKS.md).
 
+## Manifest validation
+
+Capability manifests can be validated before application startup or model
+loading. The runtime parser, kernel registration, JSON Schema, and CLI share
+one contract:
+
+```bash
+npx leanlet manifest validate ./leanlet-manifest.json
+npx leanlet manifest schema > leanlet-manifest.schema.json
+```
+
+```ts
+import { validateLeanletManifest } from 'leanlet-ai/manifest';
+
+const validation = validateLeanletManifest(untrustedJson);
+if (!validation.valid) {
+  console.error(validation.issues); // JSON Pointer, stable code, message
+}
+```
+
+Validation performs no network access and does not load capability code or
+model assets. See [Manifest contracts and CI validation](docs/MANIFESTS.md).
+
 ## Install
 
 Choose the release line deliberately:
@@ -120,7 +143,10 @@ policy:
 ```ts
 import { defineLeanlet } from 'leanlet-ai';
 
-const readingEstimate = defineLeanlet<string, { words: number; minutes: number }>({
+const readingEstimate = defineLeanlet<
+  string,
+  { words: number; minutes: number }
+>({
   id: 'text.reading-estimate',
   infer(text) {
     const words = text.match(/[\p{L}\p{N}]+/gu)?.length ?? 0;
@@ -188,7 +214,11 @@ const kernel = createLeanletKernel({
 ### 2. Register bounded capabilities
 
 ```ts
-const language: KernelLeanletDefinition<string, DetectedLanguage, LanguageModel> = {
+const language: KernelLeanletDefinition<
+  string,
+  DetectedLanguage,
+  LanguageModel
+> = {
   manifest: {
     id: 'content.language',
     version: '1.0.0',
@@ -374,12 +404,13 @@ the included `npm run benchmark:kernel` synthetic scheduler benchmark.
 | [Live capability cases](https://sukumarrekapalli.github.io/leanlet/#cases)      | Vision, routing, ranking, anomaly, retrieval, language, forecasting, and matching examples                      |
 | [Architecture](docs/ARCHITECTURE.md)                                            | Layer ownership, execution sequence, lifecycle, scheduling, and security boundaries                             |
 | [Adapter authoring](docs/ADAPTERS.md)                                           | Requirements for wrapping a model, worker, WASM runtime, index, or algorithm                                    |
-| [Language adapter](docs/LANGUAGE_MODELS.md)                                     | Worker lifecycle, selectable ELD profiles, reliability semantics, coverage, and production validation          |
+| [Language adapter](docs/LANGUAGE_MODELS.md)                                     | Worker lifecycle, selectable ELD profiles, reliability semantics, coverage, and production validation           |
 | [Performance](docs/PERFORMANCE.md)                                              | Measurement model, coalescing, budgets, and benchmark interpretation                                            |
-| [Custom models](docs/CUSTOM_MODELS.md)                                          | Model-pack metadata, adapter lifecycle, assets, providers, and limitations                                       |
+| [Custom models](docs/CUSTOM_MODELS.md)                                          | Model-pack metadata, adapter lifecycle, assets, providers, and limitations                                      |
 | [Application checks](docs/CHECKS.md)                                            | Typed checks delegated to registered Leanlets with explicit verdicts and provenance                             |
-| [Release notes](docs/releases/0.3.0-beta.5.md)                                  | Runtime capability profiles, explicit fallback routes, compatibility, and limitations                           |
-| [Next release](docs/NEXT_RELEASE.md)                                            | Current beta.5 engineering priorities and stable promotion gates                                                |
+| [Manifest validation](docs/MANIFESTS.md)                                        | Runtime parser, JSON Schema, CLI validation, CI integration, and extension policy                               |
+| [Release notes](docs/releases/0.3.0-beta.6.md)                                  | Manifest governance, validation tooling, compatibility, and limitations                                         |
+| [Next release](docs/NEXT_RELEASE.md)                                            | Remaining stabilization priorities and stable promotion gates                                                   |
 | [Security policy](SECURITY.md)                                                  | Vulnerability reporting and framework security boundaries                                                       |
 | [Contributing](CONTRIBUTING.md)                                                 | Repository setup, checks, and contribution expectations                                                         |
 
@@ -406,7 +437,7 @@ and the [full limitations](https://sukumarrekapalli.github.io/leanlet/docs/#limi
 
 The next planned prerelease after this candidate is centered on:
 
-1. an adapter conformance suite and manifest JSON Schema;
+1. an adapter conformance suite built on the versioned manifest contract;
 2. reusable worker-RPC and small ONNX adapter primitives;
 3. Chromium, Firefox, and WebKit integration evidence, including constrained
    mobile profiles;

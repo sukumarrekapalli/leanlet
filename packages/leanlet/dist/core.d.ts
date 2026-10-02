@@ -171,7 +171,6 @@ export declare class LeanletKernel {
     private resolveProvider;
     private getSlot;
     private assertActive;
-    private validateManifest;
     private validateRunOptions;
     private emit;
     private withLifecycleLock;

@@ -1,3 +1,4 @@
+import { parseLeanletManifest } from './manifest.js';
 export class LeanletError extends Error {
     code;
     cause;
@@ -23,18 +24,6 @@ const DEFAULT_POLICY = {
         'webnn',
     ],
 };
-const EXECUTION_PROVIDERS = new Set([
-    'javascript',
-    'wasm-single',
-    'wasm-threaded',
-    'webgpu',
-    'webnn',
-]);
-const NETWORK_CLASSES = new Set([
-    'deny',
-    'static-assets',
-    'application-managed',
-]);
 function now() {
     return typeof performance === 'undefined' ? Date.now() : performance.now();
 }
@@ -85,7 +74,7 @@ export class LeanletKernel {
     }
     register(definition) {
         this.assertActive();
-        this.validateManifest(definition.manifest);
+        parseLeanletManifest(definition.manifest);
         const { id } = definition.manifest;
         if (this.slots.has(id))
             throw new LeanletError('DUPLICATE_ID', `A Leanlet with id "${id}" is already registered.`);
@@ -566,30 +555,6 @@ export class LeanletKernel {
     assertActive() {
         if (this.destroyed)
             throw new LeanletError('DESTROYED', 'Leanlet kernel was destroyed.');
-    }
-    validateManifest(manifest) {
-        if (!manifest.id.trim())
-            throw new TypeError('Leanlet manifest id cannot be empty.');
-        if (!manifest.version.trim())
-            throw new TypeError(`Leanlet "${manifest.id}" version cannot be empty.`);
-        if (!manifest.task.trim())
-            throw new TypeError(`Leanlet "${manifest.id}" task cannot be empty.`);
-        if (!manifest.providers.length)
-            throw new TypeError(`Leanlet "${manifest.id}" must declare at least one provider.`);
-        if (manifest.providers.some((provider) => !EXECUTION_PROVIDERS.has(provider)))
-            throw new TypeError(`Leanlet "${manifest.id}" declares an unknown provider.`);
-        if (manifest.network !== undefined && !NETWORK_CLASSES.has(manifest.network))
-            throw new TypeError(`Leanlet "${manifest.id}" declares an unknown network class.`);
-        if (manifest.estimatedResidentBytes !== undefined &&
-            (!Number.isFinite(manifest.estimatedResidentBytes) ||
-                manifest.estimatedResidentBytes < 0))
-            throw new RangeError(`Leanlet "${manifest.id}" estimatedResidentBytes must be finite and non-negative.`);
-        for (const asset of manifest.assets ?? []) {
-            if (!asset.path.trim())
-                throw new TypeError(`Leanlet "${manifest.id}" contains an asset with an empty path.`);
-            if (!Number.isFinite(asset.bytes) || asset.bytes < 0)
-                throw new RangeError(`Leanlet "${manifest.id}" asset "${asset.path}" bytes must be finite and non-negative.`);
-        }
     }
     validateRunOptions(options) {
         if (options.priority !== undefined && !Number.isFinite(options.priority))

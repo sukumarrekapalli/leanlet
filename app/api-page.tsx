@@ -75,14 +75,14 @@ export default function ApiReference() {
 
         <article className="docs-content api-reference">
           <section id="api-overview" className="docs-intro">
-            <div className="docs-badge">Source candidate · 0.3.0-beta.5</div>
+            <div className="docs-badge">Source candidate · 0.3.0-beta.6</div>
             <h1>Complete TypeScript API reference.</h1>
             <p>
               This page documents every public value and type exported by Leanlet 0.3. Start with
               <code> defineLeanlet</code> for one local capability. Add a kernel only when multiple
               capabilities need shared scheduling, policy, lifecycle, provenance, or budgets.
             </p>
-            <div className="docs-callout blue"><ShieldCheck /><div><strong>Contract status</strong><p>0.3 is a beta. Runtime capability and explicit fallback contracts shown here are source candidates for beta.5. The 0.2 API remains available and the managed APIs are additive.</p></div></div>
+            <div className="docs-callout blue"><ShieldCheck /><div><strong>Contract status</strong><p>0.3 is a beta. Manifest validation, runtime capability, and explicit fallback contracts shown here are source candidates for beta.6. The 0.2 API remains available and the managed APIs are additive.</p></div></div>
             <Code>{`npm install leanlet-ai
 
 import {
@@ -198,6 +198,17 @@ new LeanletKernel(options?: LeanletKernelOptions)`}</Signature>
               ['license?', 'string', 'SPDX expression or upstream license label.'],
               ['sourceRevision?', 'string', 'Immutable upstream revision or release identifier.'],
             ]} />
+            <h3>Validation</h3>
+            <Signature>{`validateLeanletManifest(value: unknown): LeanletManifestValidationResult
+parseLeanletManifest(value: unknown): LeanletManifest`}</Signature>
+            <p>Use the non-throwing validator for generated or third-party JSON. Each issue contains a JSON Pointer path, stable code, and message. The parser throws <code>LeanletManifestValidationError</code> and is the same contract used by kernel registration. Neither API loads code, downloads assets, or probes the browser.</p>
+            <Code>{`npx leanlet manifest validate ./leanlet-manifest.json
+npx leanlet manifest schema > leanlet-manifest.schema.json
+
+import { validateLeanletManifest } from 'leanlet-ai/manifest';
+
+const validation = validateLeanletManifest(value);
+if (!validation.valid) console.error(validation.issues);`}</Code>
           </section>
 
           <section id="context">

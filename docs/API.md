@@ -1,6 +1,6 @@
 # Leanlet 0.3 API reference
 
-This reference covers the local `leanlet-ai@0.3.0-beta.5` release candidate. The
+This reference covers the local `leanlet-ai@0.3.0-beta.6` release candidate. The
 [web API reference](https://sukumarrekapalli.github.io/leanlet/docs/api/)
 contains the same contract in navigable form.
 
@@ -45,14 +45,14 @@ Create with `createLeanletKernel(options)` or `new LeanletKernel(options)`.
 
 ### Options and defaults
 
-| Field | Default | Contract |
-| --- | --- | --- |
-| `budget.maxConcurrentRuns` | `2` | Positive integer. Bounds active load/run work. |
-| `budget.maxResidentBytes` | `256 * 1024 * 1024` | Non-negative declared loaded-state budget. |
-| `budget.defaultDeadlineMs` | `5000` | Positive queue + load + run deadline. |
-| `policy.network` | `static-assets` | Maximum declared network class admitted. |
-| `policy.allowedProviders` | all provider IDs | Eligible execution providers. |
-| `selectProvider` | first declared allowed provider | Custom provider selection callback. |
+| Field                      | Default                         | Contract                                       |
+| -------------------------- | ------------------------------- | ---------------------------------------------- |
+| `budget.maxConcurrentRuns` | `2`                             | Positive integer. Bounds active load/run work. |
+| `budget.maxResidentBytes`  | `256 * 1024 * 1024`             | Non-negative declared loaded-state budget.     |
+| `budget.defaultDeadlineMs` | `5000`                          | Positive queue + load + run deadline.          |
+| `policy.network`           | `static-assets`                 | Maximum declared network class admitted.       |
+| `policy.allowedProviders`  | all provider IDs                | Eligible execution providers.                  |
+| `selectProvider`           | first declared allowed provider | Custom provider selection callback.            |
 
 Provider IDs are `javascript`, `wasm-single`, `wasm-threaded`, `webgpu`, and
 `webnn`. Network classes, from least to most permissive, are `deny`,
@@ -85,12 +85,12 @@ restrictions with CSP, origin boundaries, permissions, and code review.
 
 ### Run options
 
-| Field | Contract |
-| --- | --- |
-| `signal?: AbortSignal` | Cancels this caller. A coalesced caller does not cancel work required by others. |
-| `deadlineMs?: number` | Relative queue + load + run deadline; defaults to the kernel setting. |
-| `priority?: number` | Finite number, default 0. Higher values queue first; ties use earliest deadline and then FIFO. |
-| `coalesceKey?: string` | Shares matching queued/active work for the same Leanlet ID and exact key. |
+| Field                  | Contract                                                                                       |
+| ---------------------- | ---------------------------------------------------------------------------------------------- |
+| `signal?: AbortSignal` | Cancels this caller. A coalesced caller does not cancel work required by others.               |
+| `deadlineMs?: number`  | Relative queue + load + run deadline; defaults to the kernel setting.                          |
+| `priority?: number`    | Finite number, default 0. Higher values queue first; ties use earliest deadline and then FIFO. |
+| `coalesceKey?: string` | Shares matching queued/active work for the same Leanlet ID and exact key.                      |
 
 The application must build a coalescing key from every input/option that can
 change behavior. The kernel does not compare inputs and does not cache the
@@ -123,16 +123,16 @@ deadline, and an empty coalescing key.
 
 ### Manifest
 
-| Field | Contract |
-| --- | --- |
-| `id` | Stable registry key. |
-| `version` | Capability contract/implementation version placed in provenance. |
-| `task` | Bounded purpose for inspection; not an executed prompt. |
-| `description?` | Human-facing description. |
-| `providers` | Supported provider IDs, in default preference order. |
-| `network?` | Declared network requirement; omission means `deny`. |
-| `estimatedResidentBytes?` | Conservative loaded-state estimate; omission counts as zero. |
-| `assets?` | Static release asset records. |
+| Field                     | Contract                                                         |
+| ------------------------- | ---------------------------------------------------------------- |
+| `id`                      | Stable registry key.                                             |
+| `version`                 | Capability contract/implementation version placed in provenance. |
+| `task`                    | Bounded purpose for inspection; not an executed prompt.          |
+| `description?`            | Human-facing description.                                        |
+| `providers`               | Supported provider IDs, in default preference order.             |
+| `network?`                | Declared network requirement; omission means `deny`.             |
+| `estimatedResidentBytes?` | Conservative loaded-state estimate; omission counts as zero.     |
+| `assets?`                 | Static release asset records.                                    |
 
 Each `LeanletAsset` has `path`, `bytes`, and optional `sha256`, `license`, and
 `sourceRevision`.
@@ -272,6 +272,23 @@ total/verified bytes, unverified paths, duplicate references, and budget status.
 `maxBytes` sets `withinBudget`; it does not throw. Missing required hashes and
 conflicting definitions throw `LOAD_FAILED`.
 
+## Manifest validation
+
+`validateLeanletManifest(value)` validates untrusted JSON without registering
+a capability, loading code, downloading assets, or probing the device. It
+returns either `{ valid: true, manifest, issues: [] }` or
+`{ valid: false, issues }`.
+
+Each issue contains a JSON Pointer `path`, a stable `code`, and a human-readable
+`message`. Codes are `invalid-type`, `required`, `empty`,
+`unsupported-value`, `invalid-number`, and `duplicate`.
+
+`parseLeanletManifest(value)` returns the typed manifest or throws
+`LeanletManifestValidationError`. Kernel registration calls this same parser,
+so CI and runtime admission cannot drift. `leanletManifestSchema` exposes the
+version 1 JSON Schema as an import; the identical JSON artifact is exported at
+`leanlet-ai/manifest-schema`.
+
 ## Custom model packs
 
 `defineModelPack(pack)` validates and freezes portable model metadata.
@@ -323,9 +340,10 @@ profiles use a fixed ImageNet vocabulary plus a product mapping.
 
 Values: `VisionLeanlet`, `LeanletError`, `LeanletKernel`, `accepted`,
 `abstained`, `createLeanletKernel`, `defineLeanlet`, `defineFlow`,
-`planLeanletAssets`, `evaluateClassification`, `LEANLET_MODELS`,
-`getLeanletModel`, `DEFAULT_PRODUCT_CATEGORIES`, and
-`DEFAULT_CATEGORY_PROMPTS`.
+`planLeanletAssets`, `evaluateClassification`, `validateLeanletManifest`,
+`parseLeanletManifest`, `LeanletManifestValidationError`,
+`leanletManifestSchema`, `LEANLET_MANIFEST_SCHEMA_VERSION`, `LEANLET_MODELS`,
+`getLeanletModel`, `DEFAULT_PRODUCT_CATEGORIES`, and `DEFAULT_CATEGORY_PROMPTS`.
 
 Types: `KernelLeanletDefinition`, `KernelRunOptions`, `LeanletAsset`,
 `LeanletErrorCode`, `LeanletExecutionProvider`, `LeanletKernelBudget`,
@@ -337,4 +355,5 @@ Types: `KernelLeanletDefinition`, `KernelRunOptions`, `LeanletAsset`,
 `LeanletFlowResult`, `LeanletFlowTrace`, `CategoryResult`, `ClassifyOptions`,
 `LeanletEvent`, `LeanletModelId`, `LeanletStatus`, `Prediction`,
 `VisionLeanletOptions`, `LeanletDefinition`, `ScopedLeanlet`, and
-`LeanletModelDefinition`.
+`LeanletModelDefinition`, `LeanletManifestValidationIssue`,
+`LeanletManifestValidationIssueCode`, and `LeanletManifestValidationResult`.

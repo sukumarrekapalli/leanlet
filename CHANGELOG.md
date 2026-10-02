@@ -3,6 +3,17 @@
 All notable changes are documented here. The project follows semantic
 versioning; prerelease APIs may change between beta releases.
 
+## 0.3.0-beta.6 (release candidate)
+
+- Added a versioned public manifest validator with structured JSON Pointer
+  issues for CI, build tooling, and safe parsing of third-party metadata.
+- Added `parseLeanletManifest()` and `LeanletManifestValidationError`; kernel
+  registration now uses the same public validation contract.
+- Shipped the version 1 JSON Schema and focused `leanlet-ai/manifest` export.
+- Added `leanlet manifest validate` and `leanlet manifest schema` commands.
+- Added contract and CLI tests for valid, malformed, duplicated, and unsupported
+  manifest fields.
+
 ## 0.3.0-beta.4 (release candidate)
 
 - Added `defineModelPack()` for immutable model identity, revision, format,
